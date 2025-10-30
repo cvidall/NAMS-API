@@ -1,0 +1,2860 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "NAMS OpenAPI",
+    "version": "2.0"
+  },
+  "servers": [
+    {
+      "url": "/api/alert"
+    }
+  ],
+  "security": [
+    {
+      "security_auth": [
+        "read",
+        "write"
+      ]
+    }
+  ],
+  "tags": [
+    {
+      "name": "alert management",
+      "description": "Provides operations to get, search for and perform actions on alerts."
+    },
+    {
+      "name": "predefinitions",
+      "description": "Provides operations to get supported predefined codes for use as reason codes and message codes."
+    }
+  ],
+  "paths": {
+    "/external/v2/alert/attachment/{attachmentId}": {
+      "get": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Get a URI to download file attachment.",
+        "description": "Operation to create a URI pointing to the binary content of the file attachment identified by the given `attachmentId`.",
+        "operationId": "getAttachmentDownloadUri",
+        "parameters": [
+          {
+            "name": "attachmentId",
+            "in": "path",
+            "description": "Id of file attachment create download URI for",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Attachment or associated alert not found",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UriSingleValueDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/bulk/job-status": {
+      "get": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Get a paginated, sorted list of bulk job status.",
+        "description": "Allows clients to obtain a list of jobs they have submitted. Unless specified otherwise via `sortKey` and `sortOrder`,\nresults are sorted in submission order (by `submittedAt`, oldest first).",
+        "operationId": "getBulkJobs",
+        "parameters": [
+          {
+            "name": "pageRequestDto",
+            "in": "query",
+            "description": "Page request",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PageRequestDto"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkProcessStatusDtoPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failure",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/bulk/{jobId}/job-status": {
+      "get": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Get the processing status and -- if completed -- the individual item results for a bulk job.",
+        "description": "Bulk operations are asynchronous, upon submission, the system returns a `jobId` that represents the submitted job. With\nthis operation, clients can obtain the processing status and job results, given a `jobId`.",
+        "operationId": "getBulkJobStatus",
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "description": "The `jobId` as obtained from the response of one of the bulk operations, or from the response of `getBulkJobs`.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkProcessResultDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown `jobId`",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failure",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/comment": {
+      "post": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Adds a new comment to all alerts identified by the given alert ids.",
+        "description": "This is an asynchronous operation, the given request is queued to be processed later. Use operation `getBulkJobStatus` to check the processing status and to retrieve the results.",
+        "operationId": "bulkAddCommentToAlert",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkCommentInputDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Indicates that initial validations passed and the request was queued successfully.",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkProcessStatusDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failure",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/filter": {
+      "get": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Get legal `key` - `filterType` combinations that can be used when filtering for alerts.",
+        "description": "Returns the list of filter and sort keys that can be used when filtering for alerts. `alias` is the value that can be used as the sort/filter key, `filterTypes` lists the allowed filter operations.",
+        "operationId": "getLegalFilters",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "uniqueItems": true,
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SpecificationConfigValueDto"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Get a paginated, sorted list of alerts matching the specified filters",
+        "description": "Applies the given filter conditions, sorting and paging to produce a page of matching alerts.",
+        "operationId": "findAlertsByFilter",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FilterRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertOverviewDtoPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filter (e.g. unknown sort/filter key, value or invalid filterType)",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/investigation-status": {
+      "put": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Change the investigation status of all alerts identified by the given alert ids.",
+        "description": "Indicates that initial validations passed and the request was queued successfully.",
+        "operationId": "bulkChangeAlertInvestigationStatus",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAlertInvestigationStatusChangeRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Indicates that initial validations passed and the request was queued successfully.",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkProcessStatusDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failure",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/page": {
+      "get": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Get a paginated, sorted list of alerts without applying any filter conditions.",
+        "description": "Request for getting all alerts available for the requesting user without the need for sending a body.",
+        "operationId": "findAlerts",
+        "parameters": [
+          {
+            "name": "pageRequestDto",
+            "in": "query",
+            "description": "Page request",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PageRequestDto"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertOverviewDtoPage"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid page request (e.g. unknown sort key or invalid sorting)",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/status": {
+      "put": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Change the status of all alerts identified by the given alert ids.",
+        "description": "This is an asynchronous operation, the given request is queued to be processed later. Use operation `getBulkJobStatus` to check the processing status and to retrieve the results.",
+        "operationId": "bulkChangeAlertStatus",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkAlertStatusChangeRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "202": {
+            "description": "Indicates that initial validations passed and the request was queued successfully.",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkProcessStatusDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Request validation failure",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/{alertId}": {
+      "get": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Returns the full alert details for the alert with the given `alertId`.",
+        "description": "Operation that returns an alert for the given `alertId`. Depending on the permission configuration of the calling client, only a subset of the available attributes may be returned.",
+        "operationId": "findAlertByAlertId",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "description": "The id of the alert to be retrieved.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "404": {
+            "description": "Alert not found",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/{alertId}/attachments": {
+      "post": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Add file attachments to the alert with the given `alertId`.",
+        "description": "Operation for adding up to five attachments to an alert. A comment indicating that attachments were added will be created and associatd with the attachments.",
+        "operationId": "addAttachmentsToAlert",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "description": "The id of the alert to which the attachments should be added",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AttachmentInputDto"
+                }
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "More than five attachments, duplicate file names, a file name with more than 100 characters or an unsupported file type is used (supported:\ncsv, doc, docx, gif, jpe, jpeg, jpg, msg, pdf, png, txt, xls, xlsx, zip",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "404": {
+            "description": "Alert not found",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "200": {
+            "description": "Attachment(s) were uploaded successfully. The response contains the generated comment.",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentDto"
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/{alertId}/comment": {
+      "get": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Get a paginated, sorted list of comments associated with the alert identified by the given `alertId`.",
+        "description": "Operation to get a page of comments associated with the given alert. Comments can be sorted by creation timestamp using `sortKey = 'commentTimestamp'`.",
+        "operationId": "findCommentsByAlertId",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "description": "The id of the alert for which comments should be retrieved",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pageRequestDto",
+            "in": "query",
+            "description": "Page request",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/PageRequestDto"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentDtoPage"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Alert not found",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Add a new comment to the alert with the given `alertId`.",
+        "description": "Operation for adding a comment to an alert. Up to 5 file attachments can be specified to be uploaded as well.",
+        "operationId": "addCommentToAlert",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "description": "The id of the alert to which the comment should be added",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CommentWithAttachmentsInputDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "400": {
+            "description": "Invalid message code or or other request validation failure.",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "404": {
+            "description": "Alert not found",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "200": {
+            "description": "Comment added",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CommentDto"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/{alertId}/investigation-status": {
+      "put": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Change the investigation status of the alert with the given `alertId`.",
+        "description": "Performs an investigation status transition on the alert.",
+        "operationId": "changeAlertInvestigationStatus",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "description": "The id of the alert to be changed.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertInvestigationStatusChangeRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "404": {
+            "description": "Given alert id not found",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "409": {
+            "description": "Alert is currently part of a batch process and therefore locked",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "200": {
+            "description": "Investigation status successfully changed",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid target status",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/alert/{alertId}/status": {
+      "put": {
+        "tags": [
+          "alert management"
+        ],
+        "summary": "Change the status of the alert with the given `alertId`.",
+        "description": "Performs a status transition on the alert.",
+        "operationId": "changeAlertStatus",
+        "parameters": [
+          {
+            "name": "alertId",
+            "in": "path",
+            "description": "The id of the alert to be changed.",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AlertStatusChangeRequestDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Status successfully changed",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "404": {
+            "description": "Given alert id not found",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "409": {
+            "description": "Alert is currently part of a batch process and therefore locked",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid target status, invalid reason code or other request validation failure.",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "403": {
+            "description": "Insufficient permissions",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/predefinition/message": {
+      "get": {
+        "tags": [
+          "predefinitions"
+        ],
+        "summary": "Get list of all predefined message codes for use when adding comments to alerts (`addCommentToAlert`).",
+        "description": "Operation for getting all predefined message codes available in the system. The `audience` defines which stakeholder groups are allowed to use the respective code.\nUsers of this API are only allowed to use message codes where the audience is either `ALL` or `NATIONAL`, and where `usable` is `true`.",
+        "operationId": "findPredefinedMessageCodes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PredefinedMessageDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    },
+    "/external/v2/predefinition/reason": {
+      "get": {
+        "tags": [
+          "predefinitions"
+        ],
+        "summary": "Get list of all predefined reason codes to use when performing alert status changes (`changeAlertStatus`).",
+        "description": "Operation for getting all predefined reason codes available in the system. The `audience` defines which stakeholder groups are allowed to use the respective code.\nUsers of this API are only allowed to use reason codes where the audience is either `ALL` or `NATIONAL`, and where `usable` is `true`. Additionally, `excludedStatuses` may optionally define a list of alert statuses where the respective code cannot be used to transition an alert into that status.",
+        "operationId": "findPredefinedReasonCodes",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "X-NAMS-Trace-Id": {
+                "$ref": "#/components/headers/X-NAMS-Trace-Id"
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PredefinedReasonDto"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthenticated"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AlertDto": {
+        "required": [
+          "alertId"
+        ],
+        "type": "object",
+        "properties": {
+          "createdBy": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Username of NAMS user who created this record."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The time at which this record was created.",
+            "format": "date-time"
+          },
+          "modifiedBy": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Username of NAMS user who most recently modified this record."
+          },
+          "modifiedAt": {
+            "type": "string",
+            "description": "The time at which this record was most recently modified.",
+            "format": "date-time"
+          },
+          "alertId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of the alert. Used across all participating systems to refer to _this_ alert."
+          },
+          "status": {
+            "$ref": "#/components/schemas/AlertStatus"
+          },
+          "locationId": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of the _location_ (a particular pharmacy or hospital, for example) where the alert was raised. The value is usually generated by the national system."
+          },
+          "causerOrganisationType": {
+            "$ref": "#/components/schemas/ClientOrganisationType"
+          },
+          "causerUserName": {
+            "maxLength": 350,
+            "minLength": 1,
+            "type": "string",
+            "description": "The name of the user that caused the alert."
+          },
+          "causerSubUserId": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "The sub user id given by the client in the alert-raising transaction."
+          },
+          "errorCodeHub": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The error code specifying the reason for this alert given by the European Hub."
+          },
+          "errorMessageHub": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "type": "string",
+            "description": "The error message given by the European Hub, describing the `errorCodeHub`."
+          },
+          "initiatingMarket": {
+            "maxLength": 2,
+            "minLength": 1,
+            "type": "string",
+            "description": "The country code of the country where the alert-raising transaction was initiated in. This is usually the country where the affected pack is located."
+          },
+          "fulfillingMarket": {
+            "maxLength": 2,
+            "minLength": 1,
+            "type": "string",
+            "description": "The country code of the country where the national system is located that escalated the alert. Can be equal to `initiatingMarket` if the alert-raising transaction was a local one, i.e. _not_ an inter-market transaction."
+          },
+          "initiatingTransactionInformation": {
+            "$ref": "#/components/schemas/AlertTransactionInformationDto"
+          },
+          "fulfillingTransactionInformation": {
+            "$ref": "#/components/schemas/AlertTransactionInformationDto"
+          },
+          "requestTargetState": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "In the case of a (undo) decommission transaction, specifies the desired target pack state of the alert-raising transaction."
+          },
+          "alertTimestamp": {
+            "type": "string",
+            "description": "Timestamp at which the alert was raised.",
+            "format": "date-time"
+          },
+          "escalationTimestamp": {
+            "type": "string",
+            "description": "Timestamp at which the alert will be or would have been automatically escalated. Automatic escalation is performed when alerts are not being worked on by NAMS users.",
+            "format": "date-time"
+          },
+          "givenProductCodeScheme": {
+            "maxLength": 6,
+            "minLength": 1,
+            "type": "string",
+            "description": "The product code scheme specified by the client in the alert-raising transaction."
+          },
+          "givenProductCode": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string",
+            "description": "The product code specified by the client in the alert-raising transaction."
+          },
+          "givenBatchId": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The batch id specified by the client in the alert-raising transaction."
+          },
+          "givenBatchExpiryDate": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The batch expiry date specified by the client in the alert-raising transaction."
+          },
+          "givenSerialNumber": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string",
+            "description": "The serial number specified by the client in the alert-raising transaction."
+          },
+          "determinedProductCodeScheme": {
+            "maxLength": 6,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual product code scheme of the affected pack as determined during the root cause analysis."
+          },
+          "determinedProductCode": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual product code of the affected pack as determined during the root cause analysis."
+          },
+          "determinedBatchId": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual batch id of the affected pack as determined during the root cause analysis."
+          },
+          "determinedBatchExpiryDate": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual batch expiry date of the affected pack as determined during the root cause analysis."
+          },
+          "determinedSerialNumber": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual serial number of the affected pack as determined during the root cause analysis."
+          },
+          "causeCategory": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The root cause category assigned to this alert as determined by the root cause analysis."
+          },
+          "causeCategoryDescription": {
+            "type": "string",
+            "description": "A human-readable description of the `causeCategory`. Note that this text can be defined by an administrator, with the\nfollowing consequences:\n\n* The value can change at _any_ time.\n* No length constraints can be given, clients must be ready to accept empty or very long texts.\n\nUse the `Accept-Language` header to specify the desired language. Falls back to English when an unsupported language is\nrequested."
+          },
+          "incidentId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "The id of the incident this alert has been assigned to. Only set if a `causeCategory` has been assigned."
+          },
+          "suspectedCauser": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The _suspected causer_, as determined by a NAMS user. Legal values are currently `EMVS`, `END_USER` and `MAH`."
+          },
+          "intermarketTransactionType": {
+            "$ref": "#/components/schemas/IntermarketTransactionType"
+          },
+          "obpInvestigationStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "mahInvestigationStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "nmvoInvestigationStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "endUserInvestigationStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "emvsMahId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string",
+            "description": "Id of the responsible MAH in the EMVS."
+          },
+          "mahName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Name of the responsible MAH."
+          },
+          "obpId": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "Id of the responsible OBP in the EMVS."
+          },
+          "obpStatus": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "Status of the responsible OBP in the EMVS."
+          },
+          "productName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "The name of the product the affected pack belongs to."
+          },
+          "manualEntry": {
+            "type": "boolean",
+            "description": "Flag indicating whether the alert-raising transaction was performed manually (i.e. by manually typing in the pack attributes) or not (i.e. by scanning the pack's DMC)."
+          },
+          "actualState": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The status of the affected pack. Compare with `requestTargetState` in case of (undo) decommission errors."
+          },
+          "marketId": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The market id of the alert-raising transaction as specified by the European Hub."
+          },
+          "givenNhrn": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The **N**ational **H**ealthcare **R**eimbursement **N**umber specified by the client in the alert-raising transaction."
+          },
+          "determinedNhrn": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual **N**ational **H**ealthcare **R**eimbursement **N**umber of the affected pack as determined during the root cause analysis."
+          },
+          "packLastUpdateLocation": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "If the affected pack is known and has been (undo-)decommissioned before, the `locationId` of the client of that previous transaction."
+          },
+          "packLastUpdateTimestamp": {
+            "type": "string",
+            "description": "If the affected pack is known and has been (undo-)decommissioned before, the time of that previous transaction.",
+            "format": "date-time"
+          },
+          "packLastUpdateMarket": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "If the affected pack is known and has been (undo-)decommissioned before, the country code of the country where that previous transaction took place."
+          },
+          "operation": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "Name/Id of the business process of the alert-raising transaction as given by the European Hub."
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Timestamp at which this alert must be processed by, specified by the AMS Hub, has no effect in NAMS.",
+            "format": "date-time"
+          },
+          "clientSoftwareSupplier": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Supplier of the software product used by the client in the alert-raising transaction."
+          },
+          "clientSoftwareName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Name of the software product used by the client in the alert-raising transaction."
+          },
+          "clientSoftwareVersion": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Version of the software product used by the client in the alert-raising transaction."
+          },
+          "initiatingUserInfo": {
+            "$ref": "#/components/schemas/AlertInitiatingUserInfoDto"
+          },
+          "incidentTransitions": {
+            "type": "array",
+            "description": "Incident transitions, describing the incidents this alert is/was assigned to (if any).",
+            "items": {
+              "$ref": "#/components/schemas/AlertIncidentTransitionDto"
+            }
+          },
+          "statusTransitions": {
+            "type": "array",
+            "description": "Status transitions, describing the status this alert is/was in.",
+            "items": {
+              "$ref": "#/components/schemas/AlertStatusTransitionDto"
+            }
+          },
+          "investigationStatusTransitions": {
+            "type": "array",
+            "description": "Investigation status transitions, describing the investigation status this alert is/was in.",
+            "items": {
+              "$ref": "#/components/schemas/AlertInvestigationStatusTransitionDto"
+            }
+          }
+        },
+        "description": "Full alert, extending `AlertOverviewDto` with transition records and details about the initiating user."
+      },
+      "AlertIncidentTransitionDto": {
+        "required": [
+          "targetIncidentId"
+        ],
+        "type": "object",
+        "properties": {
+          "createdBy": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Username of NAMS user who created this record."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The time at which this record was created.",
+            "format": "date-time"
+          },
+          "sourceIncidentId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "The id of the incident the alert was previously assigned to. `null` if this is the initial assignment."
+          },
+          "targetIncidentId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "The id of the incident the alert was assigned to after this transition."
+          }
+        },
+        "description": "A (re-)assignment of on alert from to an incident."
+      },
+      "AlertInitiatingUserInfoDto": {
+        "type": "object",
+        "properties": {
+          "clientId": {
+            "pattern": "[A-Z\\d-]{1,32}",
+            "type": "string",
+            "description": "The user's _client id_, also called _login prefix_. Forms the full username when combined with `userId`."
+          },
+          "userId": {
+            "pattern": "[A-Z\\d-]{4,20}",
+            "type": "string",
+            "description": "The user's _user id_. Forms the full username when combined with `clientId`."
+          },
+          "regionCode": {
+            "maxLength": 12543,
+            "minLength": 1,
+            "pattern": "[a-zA-Z0-9_-]{1,255}(?>/[a-zA-Z0-9_-]{1,255})*",
+            "type": "string",
+            "description": "The region the user is assigned to (if configured in the NMVS). This is either the name of a single region, or a path of region names separated by `/`."
+          },
+          "emailAddress": {
+            "type": "string",
+            "description": "The user's email address."
+          },
+          "companyName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "The name of the company the user is associated with."
+          },
+          "userIntegrationType": {
+            "$ref": "#/components/schemas/UserIntegrationType"
+          },
+          "orgaType": {
+            "$ref": "#/components/schemas/ClientOrganisationType"
+          }
+        },
+        "description": "Information about the user who caused an alert."
+      },
+      "AlertInvestigationStatus": {
+        "type": "string",
+        "description": "The possible investigation status a stakeholder group can assign to an alert.",
+        "enum": [
+          "BLANK",
+          "INVESTIGATION_PENDING",
+          "NO_ROOT_CAUSE_ON_MY_SIDE",
+          "ROOT_CAUSE_ON_MY_SIDE"
+        ]
+      },
+      "AlertInvestigationStatusChangeRequestDto": {
+        "required": [
+          "targetStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "targetStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          }
+        },
+        "description": "Changes the investigation status of an alert."
+      },
+      "AlertInvestigationStatusTransitionDto": {
+        "required": [
+          "actor",
+          "sourceStatus",
+          "targetStatus",
+          "transitionId"
+        ],
+        "type": "object",
+        "properties": {
+          "createdBy": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Username of NAMS user who created this record."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The time at which this record was created.",
+            "format": "date-time"
+          },
+          "transitionId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of this transition."
+          },
+          "sourceStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "targetStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/HubInvestigationActor"
+          }
+        },
+        "description": "An alert's investigation status change. The `actor` attribute specifies the stakeholder group this transition refers to."
+      },
+      "AlertOverviewDto": {
+        "required": [
+          "alertId"
+        ],
+        "type": "object",
+        "properties": {
+          "createdBy": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Username of NAMS user who created this record."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The time at which this record was created.",
+            "format": "date-time"
+          },
+          "modifiedBy": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Username of NAMS user who most recently modified this record."
+          },
+          "modifiedAt": {
+            "type": "string",
+            "description": "The time at which this record was most recently modified.",
+            "format": "date-time"
+          },
+          "alertId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of the alert. Used across all participating systems to refer to _this_ alert."
+          },
+          "status": {
+            "$ref": "#/components/schemas/AlertStatus"
+          },
+          "locationId": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of the _location_ (a particular pharmacy or hospital, for example) where the alert was raised. The value is usually generated by the national system."
+          },
+          "causerOrganisationType": {
+            "$ref": "#/components/schemas/ClientOrganisationType"
+          },
+          "causerUserName": {
+            "maxLength": 350,
+            "minLength": 1,
+            "type": "string",
+            "description": "The name of the user that caused the alert."
+          },
+          "causerSubUserId": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "The sub user id given by the client in the alert-raising transaction."
+          },
+          "errorCodeHub": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The error code specifying the reason for this alert given by the European Hub."
+          },
+          "errorMessageHub": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "type": "string",
+            "description": "The error message given by the European Hub, describing the `errorCodeHub`."
+          },
+          "initiatingMarket": {
+            "maxLength": 2,
+            "minLength": 1,
+            "type": "string",
+            "description": "The country code of the country where the alert-raising transaction was initiated in. This is usually the country where the affected pack is located."
+          },
+          "fulfillingMarket": {
+            "maxLength": 2,
+            "minLength": 1,
+            "type": "string",
+            "description": "The country code of the country where the national system is located that escalated the alert. Can be equal to `initiatingMarket` if the alert-raising transaction was a local one, i.e. _not_ an inter-market transaction."
+          },
+          "initiatingTransactionInformation": {
+            "$ref": "#/components/schemas/AlertTransactionInformationDto"
+          },
+          "fulfillingTransactionInformation": {
+            "$ref": "#/components/schemas/AlertTransactionInformationDto"
+          },
+          "requestTargetState": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "In the case of a (undo) decommission transaction, specifies the desired target pack state of the alert-raising transaction."
+          },
+          "alertTimestamp": {
+            "type": "string",
+            "description": "Timestamp at which the alert was raised.",
+            "format": "date-time"
+          },
+          "escalationTimestamp": {
+            "type": "string",
+            "description": "Timestamp at which the alert will be or would have been automatically escalated. Automatic escalation is performed when alerts are not being worked on by NAMS users.",
+            "format": "date-time"
+          },
+          "givenProductCodeScheme": {
+            "maxLength": 6,
+            "minLength": 1,
+            "type": "string",
+            "description": "The product code scheme specified by the client in the alert-raising transaction."
+          },
+          "givenProductCode": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string",
+            "description": "The product code specified by the client in the alert-raising transaction."
+          },
+          "givenBatchId": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The batch id specified by the client in the alert-raising transaction."
+          },
+          "givenBatchExpiryDate": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The batch expiry date specified by the client in the alert-raising transaction."
+          },
+          "givenSerialNumber": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string",
+            "description": "The serial number specified by the client in the alert-raising transaction."
+          },
+          "determinedProductCodeScheme": {
+            "maxLength": 6,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual product code scheme of the affected pack as determined during the root cause analysis."
+          },
+          "determinedProductCode": {
+            "maxLength": 30,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual product code of the affected pack as determined during the root cause analysis."
+          },
+          "determinedBatchId": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual batch id of the affected pack as determined during the root cause analysis."
+          },
+          "determinedBatchExpiryDate": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual batch expiry date of the affected pack as determined during the root cause analysis."
+          },
+          "determinedSerialNumber": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual serial number of the affected pack as determined during the root cause analysis."
+          },
+          "causeCategory": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The root cause category assigned to this alert as determined by the root cause analysis."
+          },
+          "causeCategoryDescription": {
+            "type": "string",
+            "description": "A human-readable description of the `causeCategory`. Note that this text can be defined by an administrator, with the\nfollowing consequences:\n\n* The value can change at _any_ time.\n* No length constraints can be given, clients must be ready to accept empty or very long texts.\n\nUse the `Accept-Language` header to specify the desired language. Falls back to English when an unsupported language is\nrequested."
+          },
+          "incidentId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "The id of the incident this alert has been assigned to. Only set if a `causeCategory` has been assigned."
+          },
+          "suspectedCauser": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The _suspected causer_, as determined by a NAMS user. Legal values are currently `EMVS`, `END_USER` and `MAH`."
+          },
+          "intermarketTransactionType": {
+            "$ref": "#/components/schemas/IntermarketTransactionType"
+          },
+          "obpInvestigationStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "mahInvestigationStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "nmvoInvestigationStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "endUserInvestigationStatus": {
+            "$ref": "#/components/schemas/AlertInvestigationStatus"
+          },
+          "emvsMahId": {
+            "maxLength": 128,
+            "minLength": 1,
+            "type": "string",
+            "description": "Id of the responsible MAH in the EMVS."
+          },
+          "mahName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Name of the responsible MAH."
+          },
+          "obpId": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "Id of the responsible OBP in the EMVS."
+          },
+          "obpStatus": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "Status of the responsible OBP in the EMVS."
+          },
+          "productName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "The name of the product the affected pack belongs to."
+          },
+          "manualEntry": {
+            "type": "boolean",
+            "description": "Flag indicating whether the alert-raising transaction was performed manually (i.e. by manually typing in the pack attributes) or not (i.e. by scanning the pack's DMC)."
+          },
+          "actualState": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The status of the affected pack. Compare with `requestTargetState` in case of (undo) decommission errors."
+          },
+          "marketId": {
+            "maxLength": 20,
+            "minLength": 1,
+            "type": "string",
+            "description": "The market id of the alert-raising transaction as specified by the European Hub."
+          },
+          "givenNhrn": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The **N**ational **H**ealthcare **R**eimbursement **N**umber specified by the client in the alert-raising transaction."
+          },
+          "determinedNhrn": {
+            "maxLength": 50,
+            "minLength": 1,
+            "type": "string",
+            "description": "The actual **N**ational **H**ealthcare **R**eimbursement **N**umber of the affected pack as determined during the root cause analysis."
+          },
+          "packLastUpdateLocation": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "If the affected pack is known and has been (undo-)decommissioned before, the `locationId` of the client of that previous transaction."
+          },
+          "packLastUpdateTimestamp": {
+            "type": "string",
+            "description": "If the affected pack is known and has been (undo-)decommissioned before, the time of that previous transaction.",
+            "format": "date-time"
+          },
+          "packLastUpdateMarket": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "If the affected pack is known and has been (undo-)decommissioned before, the country code of the country where that previous transaction took place."
+          },
+          "operation": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "Name/Id of the business process of the alert-raising transaction as given by the European Hub."
+          },
+          "dueDate": {
+            "type": "string",
+            "description": "Timestamp at which this alert must be processed by, specified by the AMS Hub, has no effect in NAMS.",
+            "format": "date-time"
+          },
+          "clientSoftwareSupplier": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Supplier of the software product used by the client in the alert-raising transaction."
+          },
+          "clientSoftwareName": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Name of the software product used by the client in the alert-raising transaction."
+          },
+          "clientSoftwareVersion": {
+            "maxLength": 255,
+            "minLength": 1,
+            "type": "string",
+            "description": "Version of the software product used by the client in the alert-raising transaction."
+          }
+        },
+        "description": "Top-level alert attributes as returned by search operations. Does not contain transition records, query for specific alerts by `alertId` to obtain the full `AlertDto` specialization."
+      },
+      "AlertOverviewDtoPage": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "boolean",
+            "description": "Whether this page contains any items. Deprecated, to be removed in v3. Check `content` directly.",
+            "deprecated": true
+          },
+          "size": {
+            "type": "integer",
+            "description": "The _requested_ page size.\nDeprecated, to be removed in v3 for being misleading: Use either the length of `content`, or the corresponding request's page size, depending on your use case.",
+            "format": "int32",
+            "deprecated": true
+          },
+          "content": {
+            "type": "array",
+            "description": "The items of this page.",
+            "items": {
+              "$ref": "#/components/schemas/AlertOverviewDto"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "description": "The 0-based index of this page. If less than `totalPages - 1`, more pages of items are available.",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "description": "The number of items contained in this page. Deprecated, to be removed in v3. Use the length of `content` instead.",
+            "format": "int32",
+            "deprecated": true
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "totalElements": {
+            "type": "integer",
+            "description": "The total number of _items_ matched by the corresponding request. If greater than the length of `content`, this page represents only a subset of the available data.",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "The total number of pages available for the requested page size and filters. `totalPages - 1` is the index of the last retrievable page.",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean",
+            "description": "Whether this page is the first one or not. Deprecated, to be removed in v3 in favor of `number == 0`.",
+            "deprecated": true
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Whether this page is the last one or not. Semantically identical to `number == totalPages - 1`."
+          }
+        },
+        "description": "A page of `AlertOverviewDto` records (in `content`)."
+      },
+      "AlertStatus": {
+        "type": "string",
+        "description": "All possible status an alert can be in.",
+        "enum": [
+          "ACTIVE",
+          "UNDER_INVESTIGATION",
+          "ESCALATED",
+          "CLOSED",
+          "NEW"
+        ]
+      },
+      "AlertStatusChangeRequestDto": {
+        "required": [
+          "targetStatus"
+        ],
+        "type": "object",
+        "properties": {
+          "targetStatus": {
+            "$ref": "#/components/schemas/AlertTargetStatus"
+          },
+          "reasonCode": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+            "description": "Reason code. Allowed values can be obtained via predefinition/reason endpoint."
+          },
+          "customReasonText": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string",
+            "description": "Custom text. Required, when the custom reason code is used (RC-001). Otherwise not allowed."
+          }
+        },
+        "description": "Changes the status of an alert."
+      },
+      "AlertStatusTransitionDto": {
+        "required": [
+          "targetStatus",
+          "transitionId"
+        ],
+        "type": "object",
+        "properties": {
+          "createdBy": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Username of NAMS user who created this record."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The time at which this record was created.",
+            "format": "date-time"
+          },
+          "transitionId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of this transition."
+          },
+          "sourceStatus": {
+            "$ref": "#/components/schemas/AlertStatus"
+          },
+          "targetStatus": {
+            "$ref": "#/components/schemas/AlertStatus"
+          },
+          "reasonCode": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+            "description": "The reason code given for the status change. `null` for `targetStatus == 'UNDER_INVESTIGATION'`, otherwise required."
+          },
+          "customReasonText": {
+            "maxLength": 256,
+            "minLength": 1,
+            "type": "string",
+            "description": "Reason text given for the status change. Set when the custom reason code is used (RC-001), `null` otherwise."
+          }
+        },
+        "description": "An alert's status change."
+      },
+      "AlertTargetStatus": {
+        "type": "string",
+        "description": "All possible status an alert can be transitioned into.",
+        "enum": [
+          "ACTIVE",
+          "UNDER_INVESTIGATION",
+          "ESCALATED",
+          "CLOSED"
+        ]
+      },
+      "AlertTransactionInformationDto": {
+        "type": "object",
+        "properties": {
+          "businessProcess": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Name/Identifier of the _process_ that raised the alert. This value is defined by the national system."
+          },
+          "errorCodeNs": {
+            "maxLength": 20,
+            "minLength": 0,
+            "type": "string",
+            "description": "Error code given by the national system, specifying the reason for the alert."
+          },
+          "correlationIdRequestor": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "Correlation id given by the _client_ in the alert-raising transaction."
+          },
+          "correlationIdNs": {
+            "maxLength": 200,
+            "minLength": 0,
+            "type": "string",
+            "description": "Correlation id given by the _national system_ in the alert-raising transaction."
+          }
+        },
+        "description": "Information from a national system about the alert-raising transaction."
+      },
+      "AttachmentDto": {
+        "required": [
+          "filename",
+          "id"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of this attachment. Used to retrieve a download URL pointing to the attachment's content."
+          },
+          "filename": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "The filename associated with this attachment."
+          }
+        },
+        "description": "Represents a file attachment added to an alert. Use the `getAttachmentDownloadUri` operation to obtain a URI pointing to the attachment's content."
+      },
+      "AttachmentInputDto": {
+        "required": [
+          "base64Binary",
+          "filename"
+        ],
+        "type": "object",
+        "properties": {
+          "filename": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "The name of the file. The given extension must match the file content."
+          },
+          "base64Binary": {
+            "maxLength": 5242880,
+            "minLength": 1,
+            "type": "string",
+            "description": "The base64-encoded content of the file. Must match the `filename`. At most 5MiB are allowed.",
+            "format": "binary"
+          }
+        },
+        "description": "Uploads a file with a filename and base64-encoded content."
+      },
+      "Audience": {
+        "type": "string",
+        "description": "Stakeholder groups authorized to use a particular predefined code. `ALL` means that all stakeholder groups can use the predefined code.",
+        "enum": [
+          "ALL",
+          "EMVO",
+          "NATIONAL",
+          "OBP"
+        ]
+      },
+      "BulkAlertInvestigationStatusChangeRequestDto": {
+        "required": [
+          "alertIds",
+          "investigationStatusChange"
+        ],
+        "type": "object",
+        "properties": {
+          "alertIds": {
+            "maxItems": 5000,
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "description": "The ids of the alerts to process. Duplicates will be ignored.",
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string",
+              "description": "The ids of the alerts to process. Duplicates will be ignored."
+            }
+          },
+          "investigationStatusChange": {
+            "$ref": "#/components/schemas/AlertInvestigationStatusChangeRequestDto"
+          }
+        },
+        "description": "Changes the investigation status of multiple alerts at once."
+      },
+      "BulkAlertStatusChangeRequestDto": {
+        "required": [
+          "alertIds",
+          "statusChange"
+        ],
+        "type": "object",
+        "properties": {
+          "alertIds": {
+            "maxItems": 5000,
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "description": "The ids of the alerts to process. Duplicates will be ignored.",
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string",
+              "description": "The ids of the alerts to process. Duplicates will be ignored."
+            }
+          },
+          "statusChange": {
+            "$ref": "#/components/schemas/AlertStatusChangeRequestDto"
+          }
+        },
+        "description": "Changes the status of multiple alerts at once."
+      },
+      "BulkCommentInputDto": {
+        "required": [
+          "alertIds",
+          "comment"
+        ],
+        "type": "object",
+        "properties": {
+          "alertIds": {
+            "maxItems": 5000,
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "description": "The ids of the alerts to process. Duplicates will be ignored.",
+            "items": {
+              "maxLength": 200,
+              "minLength": 1,
+              "type": "string",
+              "description": "The ids of the alerts to process. Duplicates will be ignored."
+            }
+          },
+          "comment": {
+            "$ref": "#/components/schemas/CommentInputDto"
+          }
+        },
+        "description": "Adds a comment to multiple alerts at once."
+      },
+      "BulkProcessItemStatus": {
+        "type": "string",
+        "description": "The possible status an alert within a bulk process can be in.\n\n| Status       | Description                                    |\n|--------------|------------------------------------------------|\n| `PENDING`    | The alert has not yet been processed.          |\n| `SUCCESSFUL` | The alert has been processed successfully.     |\n| `FAILED`     | The alert has not been processed successfully. |",
+        "enum": [
+          "PENDING",
+          "SUCCESSFUL",
+          "FAILED"
+        ]
+      },
+      "BulkProcessItemStatusDto": {
+        "required": [
+          "alertId",
+          "status"
+        ],
+        "type": "object",
+        "properties": {
+          "alertId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "The id of the processed alert."
+          },
+          "status": {
+            "$ref": "#/components/schemas/BulkProcessItemStatus"
+          },
+          "failureReason": {
+            "type": "string",
+            "description": "If the status is `FAILED`, may contain an error description."
+          }
+        },
+        "description": "The processing status of an individual item within a bulk process."
+      },
+      "BulkProcessResultDto": {
+        "required": [
+          "jobId",
+          "numProcessed",
+          "numTotal",
+          "status",
+          "submittedAt",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "maxLength": 36,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of this job. Must be given when requesting its results."
+          },
+          "type": {
+            "$ref": "#/components/schemas/BulkProcessType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BulkProcessStatus"
+          },
+          "submittedAt": {
+            "type": "string",
+            "description": "The time at which this job was originally submitted.",
+            "format": "date-time"
+          },
+          "startedAt": {
+            "type": "string",
+            "description": "The time at which this job has first started processing.",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "description": "If `SUCCESSFUL` or `FAILED`, the time at which the job has finished processing.",
+            "format": "date-time"
+          },
+          "resultAvailableUntil": {
+            "type": "string",
+            "description": "If `SUCCESSFUL` or `FAILED`, the earliest time at which this job's results will be deleted.\n\nOld job results are periodically deleted after some time. This attribute represents the time at which the result will be\n_scheduled_ for deletion. _Actual_ deletion may happen a bit later.",
+            "format": "date-time"
+          },
+          "numTotal": {
+            "maximum": 5000,
+            "minimum": 1,
+            "type": "integer",
+            "description": "The total number of alerts to be processed.",
+            "format": "int32"
+          },
+          "numProcessed": {
+            "maximum": 5000,
+            "minimum": 0,
+            "type": "integer",
+            "description": "The number of alerts that have already been processed, either successfully or not.",
+            "format": "int32"
+          },
+          "items": {
+            "maxItems": 5000,
+            "minItems": 0,
+            "type": "array",
+            "description": "The individual processing results for each alert. Only available for completed jobs and only for the same user that\nsubmitted this job.",
+            "items": {
+              "$ref": "#/components/schemas/BulkProcessItemStatusDto"
+            }
+          }
+        },
+        "description": "Status information about a bulk job. For completed jobs (see `status`), individual results may be given in `items`."
+      },
+      "BulkProcessStatus": {
+        "type": "string",
+        "description": "Represents the possible status a job can be in.\n\n| Status       | Description                                                                                                                    |\n|--------------|--------------------------------------------------------------------------------------------------------------------------------|\n| `QUEUED`     | The job has been received and is waiting to be processed. A job can re-enter this status after a retryable processing failure. |\n| `RUNNING`    | The job is currently being processed.                                                                                          |\n| `SUCCESSFUL` | The job has finished and has successfully processed at least one alert.                                                        |\n| `FAILED`     | The job has finished and failed to process any alert.                                                                          |",
+        "enum": [
+          "QUEUED",
+          "RUNNING",
+          "SUCCESSFUL",
+          "FAILED"
+        ]
+      },
+      "BulkProcessStatusDto": {
+        "required": [
+          "jobId",
+          "status",
+          "submittedAt",
+          "type"
+        ],
+        "type": "object",
+        "properties": {
+          "jobId": {
+            "maxLength": 36,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of this job. Must be given when requesting its results."
+          },
+          "type": {
+            "$ref": "#/components/schemas/BulkProcessType"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BulkProcessStatus"
+          },
+          "submittedAt": {
+            "type": "string",
+            "description": "The time at which this job was originally submitted.",
+            "format": "date-time"
+          },
+          "startedAt": {
+            "type": "string",
+            "description": "The time at which this job has first started processing.",
+            "format": "date-time"
+          },
+          "completedAt": {
+            "type": "string",
+            "description": "If `SUCCESSFUL` or `FAILED`, the time at which the job has finished processing.",
+            "format": "date-time"
+          },
+          "resultAvailableUntil": {
+            "type": "string",
+            "description": "If `SUCCESSFUL` or `FAILED`, the earliest time at which this job's results will be deleted.\n\nOld job results are periodically deleted after some time. This attribute represents the time at which the result will be\n_scheduled_ for deletion. _Actual_ deletion may happen a bit later.",
+            "format": "date-time"
+          }
+        },
+        "description": "Status information about a bulk job."
+      },
+      "BulkProcessStatusDtoPage": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "boolean",
+            "description": "Whether this page contains any items. Deprecated, to be removed in v3. Check `content` directly.",
+            "deprecated": true
+          },
+          "size": {
+            "type": "integer",
+            "description": "The _requested_ page size.\nDeprecated, to be removed in v3 for being misleading: Use either the length of `content`, or the corresponding request's page size, depending on your use case.",
+            "format": "int32",
+            "deprecated": true
+          },
+          "content": {
+            "type": "array",
+            "description": "The items of this page.",
+            "items": {
+              "$ref": "#/components/schemas/BulkProcessStatusDto"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "description": "The 0-based index of this page. If less than `totalPages - 1`, more pages of items are available.",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "first": {
+            "type": "boolean",
+            "description": "Whether this page is the first one or not. Deprecated, to be removed in v3 in favor of `number == 0`.",
+            "deprecated": true
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Whether this page is the last one or not. Semantically identical to `number == totalPages - 1`."
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "description": "The number of items contained in this page. Deprecated, to be removed in v3. Use the length of `content` instead.",
+            "format": "int32",
+            "deprecated": true
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "The total number of pages available for the requested page size and filters. `totalPages - 1` is the index of the last retrievable page.",
+            "format": "int32"
+          },
+          "totalElements": {
+            "type": "integer",
+            "description": "The total number of _items_ matched by the corresponding request. If greater than the length of `content`, this page represents only a subset of the available data.",
+            "format": "int64"
+          }
+        },
+        "description": "A page of `BulkProcessStatusDto` records (in `content`)."
+      },
+      "BulkProcessType": {
+        "type": "string",
+        "description": "The supported bulk process types.\n\n| Type                                | Description                                                  |\n|-------------------------------------|--------------------------------------------------------------|\n| `CHANGE_ALERT_STATUS`               | The job changes the overall alert status of multiple alerts. |\n| `CHANGE_ALERT_INVESTIGATION_STATUS` | The job changes the investigation status of multiple alerts. |\n| `ADD_COMMENT`                       | The job adds a comment to multiple alerts.                   |",
+        "enum": [
+          "CHANGE_ALERT_STATUS",
+          "CHANGE_ALERT_INVESTIGATION_STATUS",
+          "ADD_COMMENT"
+        ]
+      },
+      "ClientOrganisationType": {
+        "type": "string",
+        "description": "The _type_ of an organisation, also called _clients_ or _members_ in the NMVS context. These are groups of users.",
+        "enum": [
+          "NMVO",
+          "OPERATOR",
+          "PHARMACY",
+          "MAH",
+          "WHOLESALER",
+          "EMVO",
+          "HOSPITAL",
+          "AUTHORITY",
+          "CONCENTRATOR",
+          "NAMS"
+        ]
+      },
+      "CommentDto": {
+        "required": [
+          "commentId",
+          "messageCode",
+          "nationalComment"
+        ],
+        "type": "object",
+        "properties": {
+          "createdBy": {
+            "maxLength": 60,
+            "minLength": 0,
+            "type": "string",
+            "description": "Username of NAMS user who created this record."
+          },
+          "createdAt": {
+            "type": "string",
+            "description": "The time at which this record was created.",
+            "format": "date-time"
+          },
+          "commentId": {
+            "maxLength": 200,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique identifier of this comment."
+          },
+          "messageCode": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+            "description": "Message code specifying the content. `text` is specified as well when the message code indicates a custom message (MC-00001)."
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string",
+            "description": "Custom text. Only set if `messageCode` == 'MC-00001', `null` otherwise."
+          },
+          "nationalComment": {
+            "type": "boolean",
+            "description": "Defines whether this comment is a _national-only comment_.\nNational-only comments are _not_ synchronized with the AMS Hub and are only visible to users of _this_ NAMS instance."
+          },
+          "attachments": {
+            "maxItems": 5,
+            "minItems": 0,
+            "type": "array",
+            "description": "Optional list of file attachments associated with this comment.",
+            "items": {
+              "$ref": "#/components/schemas/AttachmentDto"
+            }
+          }
+        },
+        "description": "A comment that has been added to an alert."
+      },
+      "CommentDtoPage": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "boolean",
+            "description": "Whether this page contains any items. Deprecated, to be removed in v3. Check `content` directly.",
+            "deprecated": true
+          },
+          "size": {
+            "type": "integer",
+            "description": "The _requested_ page size.\nDeprecated, to be removed in v3 for being misleading: Use either the length of `content`, or the corresponding request's page size, depending on your use case.",
+            "format": "int32",
+            "deprecated": true
+          },
+          "content": {
+            "type": "array",
+            "description": "The items of this page.",
+            "items": {
+              "$ref": "#/components/schemas/CommentDto"
+            }
+          },
+          "number": {
+            "type": "integer",
+            "description": "The 0-based index of this page. If less than `totalPages - 1`, more pages of items are available.",
+            "format": "int32"
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          },
+          "numberOfElements": {
+            "type": "integer",
+            "description": "The number of items contained in this page. Deprecated, to be removed in v3. Use the length of `content` instead.",
+            "format": "int32",
+            "deprecated": true
+          },
+          "pageable": {
+            "$ref": "#/components/schemas/PageableObject"
+          },
+          "totalElements": {
+            "type": "integer",
+            "description": "The total number of _items_ matched by the corresponding request. If greater than the length of `content`, this page represents only a subset of the available data.",
+            "format": "int64"
+          },
+          "totalPages": {
+            "type": "integer",
+            "description": "The total number of pages available for the requested page size and filters. `totalPages - 1` is the index of the last retrievable page.",
+            "format": "int32"
+          },
+          "first": {
+            "type": "boolean",
+            "description": "Whether this page is the first one or not. Deprecated, to be removed in v3 in favor of `number == 0`.",
+            "deprecated": true
+          },
+          "last": {
+            "type": "boolean",
+            "description": "Whether this page is the last one or not. Semantically identical to `number == totalPages - 1`."
+          }
+        },
+        "description": "A page of `CommentDto` records (in `content`)."
+      },
+      "CommentInputDto": {
+        "required": [
+          "messageCode"
+        ],
+        "type": "object",
+        "properties": {
+          "messageCode": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+            "description": "Message code. Allowed values can be obtained via predefinition/message endpoint. When custom text is indicated (MC-00001), `text` must be given as well."
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string",
+            "description": "Custom text. Required if and only if the custom message code is used (MC-00001)."
+          },
+          "nationalComment": {
+            "type": "boolean",
+            "description": "Defines whether the comment to create is a _national-only comment_.\nNational-only comments are _not_ synchronized with the AMS Hub and are only visible to users of _this_ NAMS instance.\nThis attribute is optional, its default value is `false`.",
+            "default": false
+          }
+        },
+        "description": "Creates a comment."
+      },
+      "CommentWithAttachmentsInputDto": {
+        "required": [
+          "messageCode"
+        ],
+        "type": "object",
+        "properties": {
+          "messageCode": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+            "description": "Message code. Allowed values can be obtained via predefinition/message endpoint. When custom text is indicated (MC-00001), `text` must be given as well."
+          },
+          "text": {
+            "maxLength": 500,
+            "minLength": 1,
+            "type": "string",
+            "description": "Custom text. Required if and only if the custom message code is used (MC-00001)."
+          },
+          "nationalComment": {
+            "type": "boolean",
+            "description": "Defines whether the comment to create is a _national-only comment_.\nNational-only comments are _not_ synchronized with the AMS Hub and are only visible to users of _this_ NAMS instance.\nAdding `attachments` to national comments is _not_ allowed.\nThis attribute is optional, its default value is `false`.",
+            "default": false
+          },
+          "attachments": {
+            "type": "array",
+            "description": "At most 5 file attachments to be associated with this comment. _Must not_ be given if `nationalComment` is `true`.",
+            "items": {
+              "$ref": "#/components/schemas/AttachmentInputDto"
+            }
+          }
+        },
+        "description": "Creates a comment with optional file attachments."
+      },
+      "Filter": {
+        "required": [
+          "filterType",
+          "key",
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "key": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "Attribute name to apply the condition to."
+          },
+          "value": {
+            "type": "object",
+            "description": "The value to be compared against the `key`. The comparison operator and thus the shape `value` is defined with `filterType`."
+          },
+          "filterType": {
+            "$ref": "#/components/schemas/FilterType"
+          }
+        },
+        "description": "A filter condition. The choice of `key`, `value` and `filterType` must be valid. Otherwise the request will be rejected with HTTP 400.  Use the `getLegalFilters` operation to get a list of all allowed combinations."
+      },
+      "FilterRequestDto": {
+        "type": "object",
+        "properties": {
+          "filter": {
+            "type": "array",
+            "description": "List of filter conditions. Can be empty/`null` to search without applying any conditions.",
+            "items": {
+              "$ref": "#/components/schemas/Filter"
+            }
+          },
+          "pageRequest": {
+            "$ref": "#/components/schemas/PageRequestDto"
+          }
+        },
+        "description": "Generic filter request object. Allows specifying search conditions, as well as paging and sorting."
+      },
+      "FilterType": {
+        "type": "string",
+        "description": "A comparison operation used to define a filter condition. It specifies how a given `filterValue` is to be compared with the stored value\nidentified by the `filterKey`.\n\n| Operator                    | Applicable Data Types | Description                                                                                |\n|-----------------------------|-----------------------|--------------------------------------------------------------------------------------------|\n| `CONTAINS`                  | `String`              | Filter value must be a substring of the matched attribute.                                 |\n| `CONTAINS_CASE_INSENSITIVE` | `String`              | Filter value must be a substring of the matched attribute, ignoring case.                  |\n| `AFTER`                     | `date-time`           | Filter value is a timestamp and must be greated than or equal to the matched attribute.    |\n| `BEFORE`                    | `date-time`           | Filter value is a timestamp and must be less than or equal to the matched attribute.       |\n| `IS`                        | `String`              | Filter value must be equal to the matched attribute.                                       |\n| `IS_CASE_INSENSITIVE`       | `String`              | Filter value must be equal to the matched attribute, ignoring case.                        |\n| `NOT`                       | `String`              | Filter value must not be equal to the matched attribute.                                   |\n| `IN`                        | Enum, `String`        | Filter value is a list of values, the matched attribute must be contained in the list.     |\n| `NOT_IN`                    | Enum, `String`        | Filter value is a list of values, the matched attribute must not be contained in the list. |",
+        "enum": [
+          "CONTAINS",
+          "CONTAINS_CASE_INSENSITIVE",
+          "AFTER",
+          "BEFORE",
+          "IS",
+          "IS_CASE_INSENSITIVE",
+          "IN",
+          "NOT",
+          "NOT_IN"
+        ]
+      },
+      "HubInvestigationActor": {
+        "type": "string",
+        "description": "The stakeholder groups that can change an alert's investigation status.",
+        "enum": [
+          "END_USER",
+          "NMVO",
+          "MAH",
+          "OBP"
+        ]
+      },
+      "IntermarketTransactionType": {
+        "type": "string",
+        "description": "The _type_ of an alert-raising transaction. Specifies the role of the national system from which the alert was imported.",
+        "enum": [
+          "UNKNOWN",
+          "LOCAL",
+          "INITIATING",
+          "FULFILLING"
+        ]
+      },
+      "PageRequestDto": {
+        "type": "object",
+        "properties": {
+          "sortKey": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "Attribute to sort results by, must be valid `key` as specified by the `getLegalFilters` operation."
+          },
+          "sortOrder": {
+            "pattern": "^(ASC|DESC)$",
+            "type": "string",
+            "description": "Sort order. 'ASC' or 'DESC'",
+            "default": "ASC"
+          },
+          "page": {
+            "minimum": 0,
+            "type": "integer",
+            "description": "The 0-based page number to return.",
+            "format": "int32",
+            "default": 0
+          },
+          "size": {
+            "maximum": 500,
+            "minimum": 1,
+            "type": "integer",
+            "description": "Number of items per page.",
+            "format": "int32",
+            "default": 20
+          }
+        },
+        "description": "Specifies paging and sorting."
+      },
+      "PageableObject": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "type": "integer",
+            "description": "The 0-based index of the first item to return, equal to `pageNumber * pageSize`.",
+            "format": "int64"
+          },
+          "pageNumber": {
+            "type": "integer",
+            "description": "The 0-based index of the page to return.",
+            "format": "int32"
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "The maximum number of items to return in a page.",
+            "format": "int32"
+          },
+          "paged": {
+            "type": "boolean",
+            "description": "Whether paging information was given, always `true`, because default page sizes and numbers are applied when not given in a request.",
+            "example": true
+          },
+          "unpaged": {
+            "type": "boolean",
+            "description": "Whether paging information was _not_ given, always `false`, because default page sizes and numbers are applied when not given in a request.",
+            "example": false
+          },
+          "sort": {
+            "$ref": "#/components/schemas/SortObject"
+          }
+        },
+        "description": "Page metadata of the _request_. Deprecated, to be removed in v3, use the values used at request time instead.",
+        "deprecated": true
+      },
+      "PredefinedMessageDto": {
+        "required": [
+          "audience",
+          "code",
+          "usable"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique representation of this predefined code."
+          },
+          "text": {
+            "maxLength": 2147483647,
+            "minLength": 1,
+            "type": "string",
+            "description": "The default human-readable translation of this predefined code as defined by the AMS Hub."
+          },
+          "audience": {
+            "$ref": "#/components/schemas/Audience"
+          },
+          "usable": {
+            "type": "boolean",
+            "description": "Indicates whether this predefined code can be used by the calling client, _or_ if the code is still registered at the AMS Hub.\n\nIf a predefined code is removed in the AMS Hub, this flag will switch to `false`, even if the calling client is included in the `audience`.\nAttempting to use a predefined code in a request where `usable = false` will be rejected."
+          }
+        },
+        "description": "Predefined message used when adding comments to an alert."
+      },
+      "PredefinedReasonDto": {
+        "required": [
+          "audience",
+          "code",
+          "excludedStatuses",
+          "usable"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "maxLength": 60,
+            "minLength": 1,
+            "type": "string",
+            "description": "Unique representation of this predefined code."
+          },
+          "text": {
+            "maxLength": 2147483647,
+            "minLength": 1,
+            "type": "string",
+            "description": "The default human-readable translation of this predefined code as defined by the AMS Hub."
+          },
+          "audience": {
+            "$ref": "#/components/schemas/Audience"
+          },
+          "usable": {
+            "type": "boolean",
+            "description": "Indicates whether this predefined code can be used by the calling client, _or_ if the code is still registered at the AMS Hub.\n\nIf a predefined code is removed in the AMS Hub, this flag will switch to `false`, even if the calling client is included in the `audience`.\nAttempting to use a predefined code in a request where `usable = false` will be rejected."
+          },
+          "excludedStatuses": {
+            "uniqueItems": true,
+            "type": "array",
+            "description": "The target statuses this code can _not_ be used for in an alert status change request.",
+            "items": {
+              "$ref": "#/components/schemas/AlertStatus"
+            }
+          }
+        },
+        "description": "Predefined reason used when changing the status of an alert."
+      },
+      "SortObject": {
+        "type": "object",
+        "properties": {
+          "empty": {
+            "type": "boolean",
+            "description": "Whether a sort key was given (`false`) or not (`true`)."
+          },
+          "sorted": {
+            "type": "boolean",
+            "description": "Whether a sort key was given (`true`) or not (`false`)."
+          },
+          "unsorted": {
+            "type": "boolean",
+            "description": "Whether a sort key was given (`false`) or not (`true`)."
+          }
+        },
+        "description": "Sort metadata of the _request_. Deprecated, to be removed in v3, use the values used at request time instead.",
+        "deprecated": true
+      },
+      "SpecificationConfigValueDto": {
+        "required": [
+          "alias",
+          "filterTypes"
+        ],
+        "type": "object",
+        "properties": {
+          "alias": {
+            "maxLength": 100,
+            "minLength": 1,
+            "type": "string",
+            "description": "The name of the filter/sort key."
+          },
+          "filterTypes": {
+            "minItems": 1,
+            "uniqueItems": true,
+            "type": "array",
+            "description": "The filter types that are allowed to be used when filtering with `alias`.",
+            "items": {
+              "$ref": "#/components/schemas/FilterType"
+            }
+          }
+        },
+        "description": "Specifies the filter types that can be used for a filter/sort key."
+      },
+      "UriSingleValueDto": {
+        "required": [
+          "value"
+        ],
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "string",
+            "description": "The value being wrapped.",
+            "format": "uri"
+          }
+        },
+        "description": "Wraps a URI."
+      },
+      "UserIntegrationType": {
+        "type": "string",
+        "description": "A user's integration type, specifying the way in which the user connects to the NMVS.",
+        "enum": [
+          "DIRECT",
+          "PSEUDONYMOUS",
+          "ANONYMOUS"
+        ]
+      },
+      "traceIdType": {
+        "maxLength": 32,
+        "minLength": 1,
+        "type": "string",
+        "description": "Type of a `traceId` used to uniquely identify a request/response interaction.",
+        "example": "6512766019fd787f2f422eb3c9508c3e"
+      },
+      "wwwAuthenticateType": {
+        "type": "string",
+        "description": "Type of the `WWW-Authenticate` response header.",
+        "example": "Bearer error=\"invalid_token\""
+      }
+    },
+    "responses": {
+      "Unauthenticated": {
+        "description": "Unauthenticated (invalid/missing credentials). Check the `WWW-Authenticate` response header for details.",
+        "headers": {
+          "WWW-Authenticate": {
+            "$ref": "#/components/headers/WWW-Authenticate"
+          },
+          "X-NAMS-Trace-Id": {
+            "$ref": "#/components/headers/X-NAMS-Trace-Id"
+          }
+        }
+      }
+    },
+    "headers": {
+      "WWW-Authenticate": {
+        "description": "See [here](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/WWW-Authenticate).",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/wwwAuthenticateType"
+        }
+      },
+      "X-NAMS-Trace-Id": {
+        "description": "Unique identifier assigned to an individual request/response interaction. Can be used for troubleshooting purposes.",
+        "required": true,
+        "schema": {
+          "$ref": "#/components/schemas/traceIdType"
+        }
+      }
+    },
+    "securitySchemes": {
+      "security_auth": {
+        "type": "oauth2",
+        "flows": {
+          "authorizationCode": {
+            "authorizationUrl": "https://ws-auth-qa-xv.nmvs.eu/WS_AUTH/services/authorize",
+            "tokenUrl": "https://ws-auth-qa-xv.nmvs.eu/WS_AUTH/services/token",
+            "scopes": {
+              "orga_type": "Your organisation type (NMVO, PHARMACY, MAH...).",
+              "location_id": "An anonymous id that uniquely identifies your user across all connected systems.",
+              "region_code": "The geographical region assigned to your NMVS client."
+            }
+          }
+        }
+      }
+    }
+  }
+}
