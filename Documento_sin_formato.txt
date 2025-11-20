@@ -1,0 +1,679 @@
+
+
+
+
+
+
+
+EVOLUTIVOS DE SNSFARMA
+Departamento de Desarrollo
+Referencia Documento: 
+SNSFARMA-NAMS-BE-EspecificaciónFuncional_v.1.0.docx
+
+
+
+
+
+
+
+
+Este documento ha sido elaborado en la Dirección General de Salud Digital y Sistemas de Información para el Sistema Nacional de Salud. No está permitida la reproducción total o parcial de esta publicación por cualquier medio, ya sea mecánico o electrónico, fotocopias, etc. incluyendo esta prohibición la traducción, el uso de ilustraciones, y el almacenamiento en bases de datos, sin permiso expreso y por escrito de la Dirección General de Salud Digital y Sistemas de Información para el Sistema Nacional de Salud.
+
+Histórico de versiones:
+
+VersiónDescripción cambioAutor
+FechaRevisado por
+FechaAprobado por
+Fecha1.0Documento inicialGetronics
+14/11/2025
+
+ÍNDICE
+
+1	INTRODUCCIÓN	5
+1.1	OBJETIVO	5
+1.2	ALCANCE	6
+1.3	RELACIONES CON OTROS DOCUMENTOS	6
+1.4	DESTINATARIOS	6
+1.5	GLOSARIO	6
+2	OPERACIONES DEL SERVICIO WEB DEL NAMS-NODO	8
+2.1	OPERACIONES DE CONSULTA	9
+2.1.1	listadoAlertas	9
+2.1.1.1	Funcionamiento	9
+2.1.1.2	Estrategia de Paginación para la Operación de Listado de Alertas	9
+2.1.1.3	Datos de entrada	11
+2.1.1.4	Datos de salida	12
+2.1.2	detalleAlerta	14
+2.1.2.1	Funcionamiento	14
+2.1.2.2	Datos de entrada	14
+2.1.2.3	Datos de salida	14
+2.1.3	urlCargaFotosMovil	16
+2.1.3.1	Funcionamiento	16
+2.1.3.2	Datos de Entrada	17
+2.1.3.3	Datos de Salida	17
+2.1.4	urlDescargaAdjunto	18
+2.1.4.1	Funcionamiento	18
+2.1.4.2	Datos de entrada	18
+2.1.4.3	Datos de salida	18
+2.2	OPERACIONES DE GESTIÓN DE ALERTAS	19
+2.2.1	modificarEstado	19
+2.2.1.1	Funcionamiento	19
+2.2.1.2	Datos de entrada	19
+2.2.1.3	Datos de salida	20
+2.2.2	modificarEstadoInvestigacion	20
+2.2.2.1	Funcionamiento	20
+2.2.2.2	Datos de entrada	21
+2.2.2.3	Datos de salida	21
+2.2.3	agregarComentarioAlerta	21
+2.2.3.1	Funcionamiento	21
+2.2.3.2	Datos de entrada	22
+2.2.3.3	Datos de salida	22
+2.2.3.1	Datos de salida – Error	23
+2.2.4	adjuntarFicherosAlerta	23
+2.2.4.1	Funcionamiento	24
+2.2.4.2	Datos de entrada	24
+2.2.4.3	Datos de salida	24
+2.3	OPERACIONES EN BLOQUE	25
+2.3.1	modificarEstadoEnBloque	26
+2.3.1.1	Funcionamiento	26
+2.3.1.2	Datos de entrada	26
+2.3.1.3	Datos de salida	26
+2.3.2	modificarEstadoInvestigacionEnBloque	27
+2.3.2.1	Funcionamiento	27
+2.3.2.2	Datos de entrada	27
+2.3.2.3	Datos de salida	27
+2.3.3	agregarComentarioEnBloque	27
+2.3.3.1	Funcionamiento	28
+2.3.3.2	Datos de entrada	28
+2.3.3.3	Datos de salida	28
+3	ANEXO	30
+3.1	ESTADOS DE UNA ALERTA	30
+3.1.1	NEW (Nuevo)	30
+3.1.2	ACTIVE (Activo)	30
+3.1.3	UNDER INVESTIGATION (En Investigación)	30
+3.1.3.1	BLANK (En Blanco)	30
+3.1.3.2	INVESTIGATION_PENDING (Investigación Pendiente)	30
+3.1.3.3	ROOT_CAUSE_ON_MY_SIDE (Causa de Mi Lado)	31
+3.1.3.4	NO_ROOT_CAUSE_ON_MY_SIDE (Sin Causa de Mi Lado)	31
+3.1.4	ESCALATED (Escalado)	31
+3.1.5	CLOSED (Cerrado)	31
+3.2	CÓDIGOS DE MENSAJES	32
+3.3	CÓDIGOS DE MOTIVOS (REASON CODES)	32
+
+
+
+1 INTRODUCCIÓN
+1.1 Objetivo
+El presente documento tiene como objetivo describir las funcionalidades del servicio web que ofrece la aplicación NAMS-Nodo, la cual será desarrollada por la Subdirección General de Servicios Digitales de la Salud del Ministerio de Sanidad.
+NAMS expone una API REST que gestiona las alertas recibidas desde la plataforma SEVEM. La aplicación NAMS-Nodo se conecta con el sistema NAMS a través de dicha API y proporciona un conjunto de funcionalidades que permiten a los agentes de las Comunidades Autónomas (CCAA) consultar y gestionar las alertas de manera eficiente.
+Las alertas se almacenan en NAMS con la identificación de la operación proveniente de SEVEM. Sin embargo, la información almacenada no incluye los datos de identificación del centro de atención ni del agente responsable. Para determinar la correspondencia entre una alerta y un agente específico, es necesario efectuar un cruzamiento de datos con la información de operaciones disponible en SNSFarma.
+Por eso NAMS-Nodo tiene que acceder a NAMS y SNSFarma. Esquema interacción NAMS-NODO con NAMS, SEVEM y SNSFarma
+
+
+
+
+
+
+
+
+
+
+
+
+
+Actualmente, los usuarios no pueden realizar ningún tipo de gestión sobre las alertas recibidas; únicamente reciben un mensaje informativo. Por ello, se requiere el sistema NAMS-Nodo, que permitirá a los usuarios realizar determinadas gestiones sobre dichas alertas, tales como: consultarlas, cerrarlas, escalarlas, marcarlas como pendientes de investigación, añadir comentarios, adjuntar documentos, entre otras acciones. Estas operaciones son las que se describen en este documento.
+1.2 Alcance
+Departamento de Desarrollo de la SGTI
+1.3 Relaciones con otros documentos
+ARCHIVODESCRIPCIÓNDOC-306016-10 Implementation Guideline NAMS API NAMS-8.04.pdfAPI NAMSSEVeM-0112.02_RequisitosNodoNAMS_v0.5_Borrador.docxREQUISITOS DE CONEXIÓN DE UN NODO AL NAMSDOC-306018-10 ATT-D OpenAPI Specification NAMS API NAMS-8.04 alert-v2.jsonEspecificación NAMS API
+1.4 Destinatarios
+Este documento va dirigido a los responsables funcionales de la aplicación, al equipo de soporte y responsables del proyecto.
+
+1.5 Glosario
+API: Application Programming Interface (Interfaz de Programación de Aplicaciones). Conjunto de reglas y definiciones que permiten la comunicación entre diferentes sistemas. En una API se definen una serie de funcionalidades u operaciones para comunicar dos sistemas. Una API puede ser local o vía web. 
+Servicio web (Web Service). Es una API vía web (normalmente mediante HTTP/HTTPS). 
+Operaciones de un servicio web. Son las acciones que puedes realizar (por ejemplo, consultar, crear, actualizar, eliminar).
+Endpoints: Son las URLs específicas que permiten acceder a las operaciones del servicio web. Cada endpoint representa una funcionalidad concreta.
+Métodos HTTP. Son los verbos que indican qué tipo de acción se realiza en cada endpoint. Los más comunes son GET, POST, PUT, DELETE.
+SNS: Sistema Nacional de Salud.
+NMVS (SEVEM): National Medicines Verification System (SEVEM).
+SNSFARMA: Nodo entre las CCAA y SEVEM. 
+NAMS: Sistema Nacional de Gestión de Alertas (National Alert Management System).
+NAMS-API: Operaciones que sirve NAMS.
+NCA: National Competent Authority. Autoridad nacional competente.
+NAMS-Nodo: Nodo entre las CCAA y NAMS.
+CCAA: Comunidades Autónomas.
+2 OPERACIONES DEL SERVICIO WEB DEL NAMS-NODO
+Se indican a continuación las distintas operaciones del servicio web. 
+Operaciones de consultaNombreDescripciónEndpointlistadoAlertasObtener listado de las alertas de un agente. Se pueden buscar por distintos filtros. No accede a SEVEM-NAMS/consulta/listadoAlertasdetalleAlertaObtiene los datos de una alerta. Datos generales más comentarios e ids de los adjuntos./consulta/detalleAlertaurlCargaFotosMovilNos devuelve la url para cargar ficheros a una alerta. Esta url se puede acceder desde el móvil o cualquier navegador para subir fotos./consulta/urlCargaFotosMovilurlDescargaAdjuntoObtiene la url de descarga del identificador de un adjunto/consulta/urlDescargaAdjuntoOperaciones de gestiónNombreDescripciónEndpointmodificarEstadoPermite cambiar el estado de una alerta. Permite cambiar el estado a CLOSED o ESCALATED/gestion/modificarEstadomodificarEstadoInvestigacionCambia el estado de investigación /gestion/ modificarEstadoInvestigacionagregarComentarioAlerta
+Se añade un comentario a la alerta. Se pueden incluir hasta 5 ficheros adjuntos./gestión/agregarComentarioAlerta
+adjuntarFicherosAlertaAdjunta hasta 5 ficheros a una alerta/gestión/ adjuntarFicherosAlertaOperaciones en bloqueNombreDescripciónEndpointmodificarEstadoEnBloqueModifica el estado de varias alertas.bloque/modificarEstadoEnBloquemodificarEstadoInvestigacionEnBloqueCambia el estado de investigación para las alertas enviadas.Bloque/   modificarEstadoInvestigacionEnBloqueagregarComentarioEnBloqueAñade un comentario a varias alertas.bloque/agregarComentarioEnBloque
+2.1 Operaciones de consulta
+2.1.1 listadoAlertas
+Permite consultar las alertas disponibles para un agente.  Esta operación no accede a SEVEM-NAMS. 
+2.1.1.1 Funcionamiento
+1. El sistema recibe la solicitud para invocar la operación correspondiente del webservice.
+2. Si no se envía ningún dato de entrada (parámetro de filtro), la operación devuelve todas las alertas asociadas al agente. Si la cantidad total de alertas excede el parámetro maximoElementosRespuesta, los resultados se dividen en páginas. Es necesario realizar varias llamadas, siguiendo la estrategia de paginación definida, para recuperar el total de alertas.
+3. Se permite aplicar diversos filtros predefinidos para refinar la búsqueda de alertas del agente. El sistema valida que las alertas sean del agente.
+4. Se devuelven las alertas del agente en orden ascendente según alertId. Además de los datos de cada alerta, la respuesta incluye obligatoriamente:
+ultimaAlerta: Identificador de la última alerta de la página actual.
+hayMasAlertas: Indicador booleano (true/false) que señala si existen más alertas para recuperar.
+fechaConsulta: Fecha y hora exacta de la consulta.
+2.1.1.2 Estrategia de Paginación para la Operación de Listado de Alertas
+2.1.1.2.1 Limitación de Respuesta: Parámetro Interno
+La operación listadoAlertas implementa un mecanismo de limitación de resultados mediante el parámetro interno maximoElementosRespuesta. Este parámetro define el número máximo de alertas que pueden ser devueltas en una única llamada a la operación. 
+2.1.1.2.2 Paginación Clásica: Limitaciones y Problemas
+La paginación clásica constituye un enfoque tradicional para segmentar grandes volúmenes de datos en páginas de tamaño fijo, permitiendo al cliente acceder secuencialmente a cada página mediante el parámetro de número de página. Sin embargo, este método presenta limitaciones significativas en dos aspectos críticos:
+- Consistencia de Datos: Cuando los datos se modifican durante el proceso de iteración entre páginas, la posición relativa de los registros se ve alterada. Concretamente, si se insertan o actualizan alertas entre llamadas sucesivas, esta inconsistencia puede derivar en la pérdida de datos o duplicación de registros en los resultados obtenidos.
+
+- Rendimiento: La paginación clásica requiere procesar la totalidad de los registros que preceden a la página solicitada antes de seleccionar el subconjunto a devolver. Este procesamiento secuencial de registros intermedios degrada significativamente el rendimiento, especialmente con volúmenes de datos elevados.
+
+2.1.1.2.3 Paginación Basada en Cursor: Solución Propuesta
+Para resolver las deficiencias identificadas en la paginación clásica, se propone la implementación de paginación basada en cursor. Este método emplea un identificador único para marcar la posición dentro del conjunto de datos, sustituyendo el número de página como parámetro de navegación. Específicamente, se utiliza el campo idAlert como cursor de paginación, garantizando que los resultados se devuelvan ordenados ascendentemente por este identificador.
+
+2.1.1.2.4 Ventajas de la Paginación Basada en Cursor
+Esta aproximación proporciona ventajas significativas en múltiples dimensiones:
+- Rendimiento y Eficiencia: Dado que idAlert constituye un índice en la base de datos, las consultas que operan sobre este campo se benefician de optimizaciones a nivel de índice. La base de datos selecciona directamente los registros que comienzan a partir del idAlert especificado, evitando el procesamiento innecesario de registros intermedios. Esta optimización garantiza tiempos de respuesta consistentes y significativamente menores, incluso con volúmenes de datos muy elevados.
+
+- Consistencia de Datos: Al añadir el parámetro de entrada Fecha de consulta, el mecanismo de cursor garantiza consistencia independientemente de las modificaciones que puedan ocurrir en la base de datos durante la navegación entre páginas. Los cambios en registros anteriores al cursor no afectan a la iteración en curso, asegurando la integridad referencial del conjunto de datos a lo largo de todo el proceso de paginación. 
+
+- Escalabilidad: Este método escala eficientemente incluso con volúmenes de datos muy elevados (cientos de miles o millones de registros), manteniendo tiempos de respuesta consistentes y predecibles independientemente de la cantidad de elementos totales disponibles.
+
+2.1.1.2.5 Ejemplo de paginación basada en cursor.
+La estrategia que se utiliza en esta operación listadoAlertas es la paginación basada en cursor, explicamos un ejemplo de funcionamiento.
+A continuación mostramos un ejemplo de llamadas y respuestas con sus parámetros.
+Llamada 1 . Llamada inicial
+	Los distintos filtros y sus operadores (filtro, valor, operador)
+	ultimaAlerta: null
+	fechaConsulta: null
+Respuesta 1
+	Devuelve los ids y datos de las distintas alertas.
+	Además cada respuesta devuelve tres parámetros:
+	ultimaAlerta: identificador de la última alerta devuelta 
+           fechaConsulta: fecha de la consulta con formato “2025-11-14T11:41:58Z“
+	hayMasAlertas: true o false
+Llamada 2
+	ultimaAlerta: identificador de la alerta de la respuesta 1
+	fechaConsulta: fecha consulta de la respuesta 1 “2025-11-14T11:41:58Z”
+
+Si en la entrada tenemos ultimaAlerta entonces mostramos las X siguientes a partir de esa alertaId. Si nos envían la fechaConsulta se obtienen las alertas con fecha de modificación igual o menor que esa fecha. El parámetro fechaConsulta asegura que únicamente se devuelvan alertas que se modificaron dentro del intervalo temporal especificado. Este mecanismo mantiene la consistencia de los datos a lo largo del proceso de paginación, evitando discrepancias derivadas de modificaciones concurrentes en la base de datos.
+Si en la respuesta se devuelve hayMasAlerta=false, es que no hay más alertas. 
+
+2.1.1.3 Datos de entrada
+Se pueden enviar una lista de filtros con su operador. Todos los filtros especificados en el array de filtros se combinan utilizando lógica AND. 
+AtributoTipoObligatorioDescripciónfiltroTextoSíNombre del filtro para la búsqueda.valorTextoSíValor del filtrooperadorTextoSíOperador para el filtro indicado.ultimaAlertaTextoNoidAlert de la última alerta devuelta.fechaConsultaTextoNoFecha de la última consulta devuelta. Se utiliza para mantener la consistencia de los datos en consultas. 
+Ejemplo de entrada (listadoAlertas):
+{
+  "filtros": [
+    {
+      "filtro": "estado",
+      "valor": "ACTIVE",
+      "operador": "IGUAL"
+    },
+    {
+      "filtro": "fecha",
+      "valor": "2025-10-01T00:00:00Z",
+      "operador": "MAYOR"
+    }
+  ]
+  ultimaAlerta: null,
+  fechaConsulta: null
+}
+Este ejemplo obtiene las alertas con status=ACTIVE y con fecha de modificación después (“AFTER”) de 2025-10-01T00. Las alertas devueltas están ordenadas por la el alertId de manera decreciente. No se envía nada en ultimaAlerta y fechaConsulta. 
+2.1.1.3.1 Filtros disponibles con sus operadores son:
+      estado: Estado de la alerta. Se pueden buscar las alertas con uno de los estados.
+      Operador: “IGUAL”. 
+      fecha. Fecha de modificación de la alerta. 
+      Operadores: “MAYOR”, “MENOR”
+      centroID. Identificador del centro. 
+      	Operador: “IGUAL”. 
+      
+      productoID. Identificador del producto.
+      	Operador: “IGUAL”.
+
+2.1.1.4 Datos de salida
+2.1.1.4.1 Datos de salida - Éxito (200 OK)
+Devuelve los datos de todas las alertas encontradas. Esta operación no accede a SEVEM-NAMS y solamente devolverá los datos que existan en la tabla de SNSFARMA-NAMS-BE. 
+
+AtributoTipoObligatorioDescripciónalertaIdTextoSíIdentificador único de la alerta.estadoTextoSíEstado actual de la alerta.fechaCreacionFechaSíFecha de creación de la alerta.fechaModificacionFechaSíFecha de última modificación.transactionIdTextoSí Identificador de la operación de SNSFARMA. Este identificador se necesita para relacionar la operación de SNSFARMA con la Alerta de NAMS.agenteIdTextoSíIdentificador del Agente. Origen SNSFARMAcentroIdTextoSíIdentificador del centro en SNSFARMAproductoIdTextoSíIdentificador del productotipoOperacionIdTextoSíIdentificador del tipo de operación en SNSFARMAultimaAlertaTextoSíDevuelve el idAlert de la última alerta devueltahayMasAlertasBooleanSíSi hay más alertas a mostrar o no. (true o false)fechaConsultaFechaSíEs la fecha en la que se realizar la consulta. Esta fecha se tendrá en cuenta si hay paginación si se quiere mantener estable los resultados devueltos.
+Ejemplo de salida
+{
+  "content": [
+    {
+      " alertaId ": "ALERT-0000001",
+      "estado": "ACTIVE",
+      "fechaCreacion": "2025-10-15T08:30:00Z",
+      "fechaModificacion": "2025-10-16T10:00:00Z",
+      "transactionId": "CAF992C79EAFE07D873D203B967C5DC4",
+      "agenteId": "13",
+      “centroId”: “1328000002”,
+      “productoId”: “08436571520296”,
+      “tipoOperacionId”: “DESACTIVAROF”
+    },
+     {
+      "alertaId": "ALERT-0000002",
+      "estado": "ACTIVE",
+      "fechaCreacion": "2025-10-15T08:30:00Z",
+      "fechaModificacion": "2025-10-16T10:00:00Z",
+      " transactionId ": "BB221726A6FAA63B6AE260A4410406E2",
+         “agenteId”: “13”,
+         “centroId”: “1328013891”,
+         “productoId”: “08470006068946”,
+         “tipoOperacionId”: “DESACTIVARSF”
+    }
+  ]
+… ultimaAlerta: “ALERT-0000002”,
+  hayMasAlertas: false,
+  fechaConsulta: “2025-10-16T10:00:00Z”
+
+}
+
+En este ejemplo se ven los datos de dos alertas. Y nos dice el alertId de la última alerta, la fecha de la consulta y que no hay más alertas que cumplan con los criterios de búsqueda.
+2.1.1.4.2 Datos de salida – Error
+Los posibles errores devueltos son:
+- 400 Bad request. Filtro inválido (clave, valor o tipo incorrecto).
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+2.1.2 detalleAlerta
+Esta operación permite recuperar los detalles completos de una alerta específica. Nos devuelve:
+- Los datos generales de una alerta
+- Los comentarios 
+- Los identificadores de los ficheros adjuntos.
+
+Esta operación que accede a SEVEM-NAMS, por lo que se tiene que limitar el número de accesos por hora / agente a esta operación para no cargar SEVEM-NAMS. Existe un parámetro en la aplicación peticionesSevemAgenteHora que indica el número de peticiones por hora que puede hacer un agente.
+2.1.2.1 Funcionamiento
+Se valida que exista el campo alertId y tenga un formato válido.
+Se comprueba que el agente no ha pasado el límite de peticiones por hora.
+Se busca la alerta. Si se encuentra la alerta, se obtienen todos los atributos asociados a la alerta.
+Se construye la respuesta con todos los datos disponibles y se devuelve al usuario.
+Si no se encuentra la alerta, se devuelve un error indicando que no existe.
+2.1.2.2 Datos de entrada
+AtributoTipoObligatorioDescripciónalertaIdTextoSíIdentificador único de la alerta a consultar2.1.2.3 Datos de salida 
+2.1.2.3.1 Datos de salida - Éxito
+Si ha ido todo bien nos devuelve un código 200 – OK, con todos los datos de la alerta:
+El listado completo de los datos del detalle de una alerta se encuentra en el fichero json 
+DOC-306018-10 ATT-D OpenAPI Specification NAMS API NAMS-8.04 alert-v2.json
+Se indican a continuación los datos más relevantes que se devuelven:
+AtributoTipoObligatorioDescripciónalertaIdTextoSíIdentificador único de la alertafechaModificacionStringSíUsuario de NAMS que creó la alerta.fechaCreacionStringSíFecha de creación  modifiedByStringSíModificado por modifiedAtStringSíFecha de modificaciónstatusStringSíEstado actual de la alertaendUserInvestigationStatusStringSíEstado de investigación. Si el status es “UNDER_INVESTIGATION” se indica en qué estado está la investigación: locationIdStringSíIdentificador de la ubicación donde se originó la alerta. causerOrganisationTypeStringSíTipo de organización que originó la alertacauserUserNameStringSíUsuario del sistema que causó la alertaerrorCodeHubStringSíCódigo de error generado por AMS HubinitiatingMarketStringSíPaís que originó la alertafulfillingMarketStringSíPaís que gestionó la alerta. El país que investiga la alerta.initiatingTransactionInformation.
+businessProcessStringSíLos initiatingTransactionInformation son datos de la operación de la operación de SEVEM. Tipo de operación que originó la alerta.initiatingTransactionInformation.
+errorCodeNsStringSíError generado por SEVEM en la operación.initiatingTransactionInformation.
+correlationIdRequestorStringSíIdentificador de correlación. Permite trazar y rastrear la petición a través de distintos sistemasinitiatingTransactionInformation.
+correlationIdNsStringSíIdentificador de correlación generado por. Se utiliza para rastrear internamente la operación dentro del ecosistema de NAMS.alertTimestampStringSíIndica la fecha y hora exacta en que se generó la alerta dentro del sistema NAMS. Tipo: DateTime (formato ISO 8601, por ejemplo: 2025-10-27T11:45:00Z)escalationTimestampStringSíIndica la fecha y hora en que la alerta fue escalada.  Si la alerta no ha sido escalada, este campo puede estar vacío o nulo.givenProductCodeSchemeStringSíIndica el esquema de codificación del código de producto. Por ejemplo: NTIN, GTIN, etc.givenProductCodeStringSíCódigo del producto. givenBatchIdStringSíIdentificador del lotegivenBatchExpiryDateStringSíFecha de caducidad del lotegivenSerialNumberStringSíNúmero de serie del productocauseCategoryStringSíCategoría general de la causa que originó la alerta. Causas de alertas en el NAMS (Cause Category)causeCategoryDescriptionStringSíDescripción de la categoría de la causa.incidentIdStringSíIdentificador único del incidente asociado a la alerta. Permite relacionar la alerta con un caso específico en el sistema de gestión de incidentes. Relaciona la alerta con un incidente.Comments.commentIdStringSíComments es una lista con los datos de los comentarios.
+Identificador único del comentario.Comments.authorStringSíUsuario o sistema que generó el comentario.Comments .timestampDateTimeSíFecha y hora en que se registró el comentario.Comments.textStringSíContenido textual del comentario.Attachments.attachmentIdStringOpcionalAttachments es una Lista de archivos adjuntos. Id del adjunto
+Attachments.filenameStringOpcionalNombre del adjunto
+2.1.2.3.2 Datos de salida – Error
+- 401 Unauthenticated. El usuario no está autenticado. Puede faltar el token o ser inválido. 
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación. 
+- 404 Not Found. La alerta con el alertId especificado no existe. El número de peticiones por hora del agente ha superado el máximo permitido.
+
+2.1.3 urlCargaFotosMovil
+Nos devuelve para una alerta una url para cargar adjuntos desde cualquier dispositivo. 
+2.1.3.1 Funcionamiento
+Al llamar a esta operación con un alertaID nos devuelve una url para poder subir ficheros desde un navegador o desde el móvil, sin autenticarse. Es útil para los usuarios poder adjuntar fácilmente fotos desde el móvil sin tener que configurar credenciales ni certificados. 
+Información de la url devuelta.
+La url la ponemos en un navegador y se muestra una pantalla como esta:
+
+El funcionamiento de esta pantalla no depende del NAMS-Nodo.
+Esta url es temporal, al entrar nos indica el tiempo que nos queda (por defecto el tiempo es una hora) y solamente se puede utilizar una vez. Se vuelve inválida después de una carga con éxito.
+Se indican las restricciones de los ficheros que se pueden subir.
+2.1.3.2 Datos de Entrada
+
+AtributoTipoObligatorioDescripciónalertaIdTextoSíIdentificador único de la alerta a subir fotos
+2.1.3.3 Datos de Salida
+2.1.3.3.1 Datos de salida – Éxito
+AtributoTipoObligatorioDescripciónurlTextoSíUrl del tipo : https://nams-int-es.nmvs.eu/attach/app/upload/aHR0cHM6Ly9uYW1zLWludC1...“
+2.1.3.3.2 Datos de salida – Error
+- 401 Unauthenticated. El usuario no está autenticado. Puede faltar el token o ser inválido. 
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación. 
+- 404 Not Found. La alerta con el alertId especificado no existe. El número de peticiones por hora del agente ha superado el máximo permitido.
+
+
+
+2.1.4 urlDescargaAdjunto
+Para un id de adjunto nos devuelve la url temporal para descargarlo.
+Con la operación detalleAlerta se obtienen los datos generales de una alerta, los comentarios y los identificadores de los adjuntos. Con ese identificador de adjunto se llamará a esta operación para que nos devuelva la url temporal para descargar el fichero.
+2.1.4.1 Funcionamiento
+Esta operación permite obtener una URI (Uniform Resource Identifier) temporal que apunta al contenido binario de un archivo adjunto específico. La URI generada puede utilizarse para descargar el archivo adjunto asociado a una alerta en el sistema NAMS.
+
+Es una operación de lectura que NO modifica datos, simplemente genera un enlace de 
+descarga seguro y temporalmente válido.
+
+- El usuario realiza una llamada a la operación
+- El identificadorFichero identifica de forma única al archivo adjunto en el sistema
+- El sistema busca el archivo adjunto con el identificadorFichero proporcionado
+- El sistema genera una URI única que apunta al archivo adjunto. Esta url está disponible temporalmente.
+-Se puede hacer la misma llamada múltiples veces sin efectos secundarios, cada llamada generará una url distinta.
+- El sistema verifica que la alerta asociada al adjunto existe
+- Se comprueba que la alerta no ha sido eliminada del sistema.
+- Se verifica que el archivo físico está disponible en el almacenamiento
+- Se comprueba la integridad del archivo
+- Se valida que el adjunto no ha sido marcado como eliminado
+- La url devuelta puede utilizarse en un navegador para descargar el archivo.
+2.1.4.2 Datos de entrada
+AtributoTipoObligatorioDescripciónidentificadorFicheroTextoSíID del archivo adjunto para el cual se creará la URI de descarga. Se envía como parámetro de path en la URL
+2.1.4.3 Datos de salida
+2.1.4.3.1 Datos de salida - Éxito
+AtributoTipoObligatorioDescripciónUrlTextoSíURI que apunta al contenido binario del archivo adjunto. Esta URI puede usarse para descargar el archivo
+
+2.1.4.3.2 Datos de salida – Error
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+- 404 Not Found. El archivo adjunto con el attachmentId especificado no existe. La alerta asociada al adjunto no existe. El adjunto fue eliminado del sistema.
+
+2.2 Operaciones de gestión de alertas
+2.2.1 modificarEstado
+Modifica el estado de una alerta. Los estados a los que se puede cambiar una alerta son: ACTIVE, UNDER_INVESTIGATION, ESCALATED, CLOSED. 
+2.2.1.1 Funcionamiento
+Al llamar a esta operación el sistema valida que exista la alertId y que el cliente tenga permisos para modificar la alerta.
+Se verifica que el nuevoEstado sea válido y no sea el mismo que tiene actualmente la alerta. 
+Se valida el codigoMotivo:
+   - Si es RC-001, se requiere textoMotivo.
+   - Si es otro código, textoMotivo será vacío.
+   - El código debe ser válido, estar activo.
+Si todas las validaciones son correctas, se actualiza el estado de la alerta y se registra el cambio de estado. 
+Si SEVEM-NAMS ha devuelto OK se modifica el estado en el NAMS-Nodo para tener sincronizado el estado de la alerta.
+
+2.2.1.2 Datos de entrada
+AtributoTipoObligatorioDescripciónalertIdTextoSíIdentificador único de la alerta a modificar.nuevoEstadoTextoSíEstado objetivo al que se desea cambiar la alerta. Valores válidos: ACTIVE, UNDER_INVESTIGATION, ESCALATED, CLOSED. Ver estados de una alerta.codigoMotivoTextoCondicionalCódigo del motivo que justifica el cambio de estado. Obligatorio excepto cuando el estado objetivo es UNDER_INVESTIGATION. Los posibles códigos se pueden ver en códigos de motivos.textoMotivoTextoCondicionalTexto personalizado que explica el cambio de estado. Obligatorio si se usa el código RC-001, prohibido en otros casos.
+Ejemplo de llamada:
+alertId: código de la alerta
+nuevoEstado: "ESCALATED",
+codigoMotivo: "RC-001",
+textoMotivo: "Comentario del cambio de estado"
+
+2.2.1.3 Datos de salida
+2.2.1.3.1 Datos salida – Éxito
+- 200 – OK. Devuelve un código 200 de que se ha realizado correctamente el cambio
+2.2.1.3.2 Datos salida – Error
+- 400 Bad Request
+      El estado objetivo es inválido.
+      El estado objetivo es igual al estado actual.
+      El código de motivo es inválido o no permitido para el estado.
+      Se usa RC-001 sin proporcionar textoMotivo.
+      Se proporciona textoMotivo con un código de razón distinto a RC-001.
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+- 404 Not Found. La alerta con el alertId especificado no existe. 
+- 409 Conflict. La alerta está bloqueada por un proceso en lote en curso.
+
+2.2.2 modificarEstadoInvestigacion
+La operación permite cambiar el estado de investigación de una alerta.
+2.2.2.1 Funcionamiento
+Los estados válidos se indican en el punto Estados de investigación.
+No se permite el estado BLANK ni repetir el estado actual.
+El usuario hace una llamada a la operación con el alertId y el nuevoEstadoInvestigacion.
+Se valida que exista la alerta y que el usuario puede modificarla.
+El sistema valida el estado actual y el nuevo estado.Si es válido, se actualiza el estado de investigación de la alerta (endUserInvestigationStatus).
+Resultado: La operación devuelve 200 – Ok  si el cambio fue exitoso, o un código de error.
+2.2.2.2 Datos de entrada
+AtributoTipoObligatorioDescripciónalertIdTexto SíIdentificador único de la alerta a modificarnuevoEstadoInvestigacionTextoSíEstado de investigación objetivo. Valores permitidos. 
+Ejemplo de entrada:
+alertId: código de la alerta
+nuevoEstado: " INVESTIGATION_PENDING",
+
+2.2.2.3 Datos de salida
+2.2.2.3.1 Datos de salida - Éxito
+La operación devuelve un 200 – Ok si ha sido exitosa.
+2.2.2.3.2 Datos de salida – Error
+- 400 Bad Request
+      El estaoNuevoInvestigacion es inválido (por ejemplo, 'BLANK').
+      El estaoNuevoInvestigacion es igual al estado de investigacion actual.
+      El código de razón es inválido o no permitido para el estado objetivo.
+      Se usa RC-001 sin proporcionar customReasonText.
+      Se proporciona customReasonText con un código de razón distinto a RC-001.
+            El código de razón no está marcado como usable en el sistema.
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+- 404 Not Found. La alerta con el alertId especificado no existe. 
+- 409 Conflict. La alerta está bloqueada por un proceso en lote en curso.
+
+2.2.3 agregarComentarioAlerta
+La operación permite añadir un comentario a una alerta específic. El comentario puede incluir un código de mensaje, un texto personalizado y/o archivos adjuntos.
+2.2.3.1 Funcionamiento
+El sistema valida la autorización del usuario sobre la alerta.
+Si se usa MC-00001, se requiere el campo texto.
+Si todo es correcto, el comentario se guarda y se devuelve en la respuesta con su identificador, fecha de creación, autor, código de mensaje, texto y adjuntos si los hay.
+El campo codigoMensaje es obligatorio.
+El campo texto es obligatorio si se usa MC-00001.
+Validación de tipos de archivo por seguridad.
+Escaneo de virus en archivos adjuntos
+Los comentarios no pueden modificarse una vez creados.
+2.2.3.2 Datos de entrada
+
+AtributoTipoObligatorioDescripciónalertIdTextoSíIdentificador de la alerta.codigoMensajeTextoSíCódigo de mensaje. Obligatorio para todos los comentarios. Ver códigos de mensajes.TextoTextoCondicionalTexto del comentario. Obligatorio si se usa el código MC-00001 (máximo 500 caracteres)Adjuntos. nombreFicheroTextoNoAdjuntos: Lista de archivos adjuntos (máx. 5 archivos de hasta 5?MiB). No permitidos si nationalComment = true.
+Nombre del archivo Adjuntos.
+Base64TextoNoContenido del archivo en base64 (máx. 5MB)
+  “alertId”: código de la alerta
+  "codigoMensaje": "MC-00001",
+  "texto": "Verificación completada del lote",
+  "adjuntos": [
+    {
+      "nombreFichero": "informe.pdf",
+      "base64": "JVBERi0xLjcKCjEgMCBvYmoKPDwKL1R5cGUgL0NhdGFsb2cKL1BhZ2V..."
+    },
+    {
+      "nombreFichero ": "informe2.pdf",
+      "base64Binary": "2JVBERi0xLjcKCjEgMCBvYmoKPDwKL1R5cGUgL0NhdGFsb2cKL1BhZ2V..."
+    },
+	….
+  ]
+}
+2.2.3.3 Datos de salida
+2.2.3.3.1 Datos de salida - Éxito
+
+AtributoTipoObligatorioDescripcióncomentarioIdTextoSíIdentificador único del comentario creado.UsuarioTextoSíUsuario que creó el comentario.FechaFechaSíFecha y hora de creación del comentario en formato UTC.codigoMensajeTextoSíCódigo de mensaje predefinido utilizado en el comentario.TextoTextoCondicionalTexto del comentario. Obligatorio si se usa MC-00001.AdjuntosListaNoLista de archivos adjuntos con sus identificadores y nombres.
+Ejemplo de salida
+{
+  "comentarioId": "comment-123",
+  "usuario": "usuario",
+  "fecha": "2025-10-30T10:49:31Z",
+  "codigoMensaje": "MC-00001",
+  "texto": "Verificación completada del lote",
+  "adjuntos": [
+    {
+      "id": "att-456",
+      "filename": "informe.pdf"
+    }
+  ]
+}
+2.2.3.1 Datos de salida – Error
+- 400 Bad Request. Error de validación: código mensaje inválido, límites excedidos.
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+- 404 Not Found. La alerta con el alertId especificado no existe. 
+
+2.2.4 adjuntarFicherosAlerta
+Adjuntar ficheros es añadir un comentario a una alerta. La operación es síncrona y crea automáticamente un comentario asociado a los archivos adjuntos que indica que se han añadido archivos a la alerta. Los adjuntos están asociados a un comentario.
+Tanto si se hace con la operación adjuntarFicherosAlerta como con la urlCargaFotosMovil lo que se carga en la alerta es un comentario con un identificador de fichero y el nombre del fichero. Ese identificador de fichero nos sirve para obtener la url de descarga con la operación urlDescargaAdjunto.
+Para obtener los adjuntos de una alerta se obtienen con la operación detalleAlerta dentro de los comentarios. 
+Importante: para poder subir un fichero con esta operación hay que convertirlo a base64 binary.
+2.2.4.1 Funcionamiento
+El sistema recibe el contenido de cada archivo (codificado en base64).
+Los archivos se almacenan en el repositorio de archivos del sistema
+Se genera un identificador único (idFichero) para cada archivo adjunto
+Se registran los metadatos de cada archivo: nombre, tamaño, tipo, timestamp
+El sistema genera automáticamente un comentario en la alerta. El comentario indica que se han añadido archivos adjuntos. Los archivos adjuntos se asocian a este comentario y alerta. El comentario y sus adjuntos se pueden consultar con la operación detalleAlerta.
+Los ficheros se pueden descargar obteniendo la url de descarga con la operación urlDescargaAdjunto.
+Todos los ficheros en la solicitud se procesan en una única transacción.
+Se valida que el usuario tiene permisos suficientes para añadir adjuntos a alertas
+Se verifica que cada archivo tiene una extensión soportada. Extensiones permitidas: csv, doc, docx, gif, jpe, jpeg, jpg, msg, pdf, png, txt, xls, xlsx, zip.
+La operación es atómica: si falla alguna validación, no se sube ningún fichero.
+2.2.4.2 Datos de entrada
+
+AtributoTipoObligatorioDescripciónalertIdTextoSíID de la alerta a la que se añadirán los adjuntosnombreFicheroTextoSíLista de adjuntos (máximo 5)contenidoFicheroTexto base64SíContenido del archivo codificado en base64
+Ejemplo de entrada
+alertId: Código de la alerta
+nombreFichero: "base64.txt",
+contenidoFichero: “YWxlcnRhDQpFUy04NTE4MzA1Ni1lYWJjLTRhZWItOTllZi1iNDg3NTBmYTE0ZTQ="
+
+2.2.4.3 Datos de salida
+2.2.4.3.1 Datos de salida – Éxito
+Devuelve lo mismo que al añadir un comentario con un fichero. El código mensaje siempre es “MC-00001” y el texto “Fichero añadido”.
+
+AtributoTipoObligatorioDescripcióncomentarioIdTextoSíIdentificador único del comentario creado.usuarioTextoSíUsuario que creó el comentario.fechaFechaSíFecha y hora de creación del comentario en formato UTC.codigoMensajeTextoSíCódigo de mensaje predefinido utilizado en el comentario.textoTextoSíObligatorio al devolver siempre MC-00001.AdjuntosListaSíLista de archivos adjuntos con sus identificadores y nombres.idFicheroTextoSíIdentificador del adjuntonombreFicheroTextoSíNombre del fichero subido
+Ejemplo de salida
+{
+  "comentarioId": "comment-123",
+  "usuario": "usuario",
+  "fecha": "2025-10-30T10:49:31Z",
+  "codigoMensaje": "MC-00001",
+  "texto": "Fichero añadiro",
+  "adjuntos": [
+    {
+      "idFichero": "att-456",
+      "filename": "informe.pdf"
+    }
+  ]
+}
+2.2.4.3.2 Datos de salida – Error
+- 400 Bad Request. Error de validación: código mensaje inválido, límites excedidos.
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+- 404 Not Found. La alerta con el alertId especificado no existe. 
+
+2.3 Operaciones en bloque
+Las operaciones en bloque ejecutan la misma acción que sus equivalentes para una alerta, pero sobre múltiples alertas en una sola petición.
+A diferencia de las operaciones para una alerta (síncronas) que retornan 200 (OK) al completarse, las operaciones en bloque son asíncronas y devuelven un 202 Accepted, indicando que se acepta la solicitud. Pero la solicitud se procesa después internamente.
+Validación inicial: Solo se valida la estructura de la solicitud (formato, número máximo de alertas, etc.)
+Validación diferida: La validación de los datos específicos (códigos de mensaje, existencia de alertas, etc.) se realiza durante el procesamiento.
+Procesamiento en segundo plano: Las alertas se procesan individualmente. Solo se modificarán aquellas que existan y tengan datos correctos.
+2.3.1 modificarEstadoEnBloque
+Modifica el estado de las alertas indicadas en lote. 
+2.3.1.1 Funcionamiento
+Operación asíncrona que permite cambiar el estado de múltiples alertas en una sola llamada. El proceso se ejecuta en segundo plano y los resultados pueden consultarse posteriormente.
+Nota. En NAMS-Nodo este estado de las alertas no se actualizará hasta que se ejecute la tarea de sincronización de alertas. 
+Las validaciones de estados, alertas se realizan en el proceso que se ejecuta en segundo plano. Los errores en una alerta no afectan al procesamiento de las demás. 
+2.3.1.2 Datos de entrada
+Tiene los mismos datos de entrada que la operación modificarEstatoAlerta pero con varios ids de alertas.
+AtributoTipoObligatorioDescripciónalertaIdsTextoSíIdentificadores únicos de las alertas a modificar.nuevoEstadoTextoSíEstado objetivo al que se desea cambiar la alerta. Valores válidos: ACTIVE, UNDER_INVESTIGATION, ESCALATED, CLOSED. Ver estados de una alerta.codigoMotivoTextoCondicionalCódigo del motivo que justifica el cambio de estado. Obligatorio excepto cuando el estado objetivo es UNDER_INVESTIGATION. Los posibles códigos se pueden ver en códigos de motivos.textoMotivoTextoCondicionalTexto personalizado que explica el cambio de estado. Obligatorio si se usa el código RC-001, prohibido en otros casos.
+2.3.1.3 Datos de salida
+2.3.1.3.1 Datos de salida – Éxito
+Nota: Al ser una operación asíncrona cuando hay éxito se devuelve un código 202 – Accepted. En las operaciones que NO son asíncronas cuando hay éxito se devuelve un 200 - OK
+2.3.1.3.2 Datos de salida – Error
+- 400 Bad Request. Error de validación en la solicitud.
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+
+2.3.2 modificarEstadoInvestigacionEnBloque
+Modifica el estado de investigación de las alertas indicadas en lote. 
+2.3.2.1 Funcionamiento
+Operación asíncrona que permite cambiar el estado de investigación de múltiples alertas en una sola llamada. El proceso se ejecuta en segundo plano y los resultados pueden consultarse posteriormente.
+Las validaciones de estados y alertas se realizan en el proceso que se ejecuta en segundo plano. Los errores en una alerta no afectan al procesamiento de las demás. 
+2.3.2.2 Datos de entrada
+Tiene los mismos datos de entrada que la operación modificarEstatoInvestigacionAlerta pero con varios ids de alertas.
+AtributoTipoObligatorioDescripciónalertaIdsTexto SíIdentificadores únicos de las alertas a modificarnuevoEstadoInvestigacionTextoSíEstado de investigación objetivo. Valores permitidos. 2.3.2.3 Datos de salida
+2.3.2.3.1 Datos de salida – Éxito
+Nota: Al ser una operación asíncrona cuando hay éxito se devuelve un código 202 – Accepted. En las operaciones que NO son asíncronas cuando hay éxito se devuelve un 200 - OK
+2.3.2.3.2 Datos de salida – Error
+- 400 Bad Request. Error de validación en la solicitud.
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+
+2.3.3 agregarComentarioEnBloque
+Esta operación sirve para agregar un comentario a varias alertas a la vez. 
+Es la misma operación que agregarComentarioAlerta pero en vez de indicar un idAlerta, se indican varios idAlerta, agregando el comentario a todas las alertas.
+Esta operación en bloque no permite adjuntar ficheros a las alertas. Al igual que tampoco existe una operación de adjuntarFicherosEnBloque ya que no se pueden adjuntar ficheros para varias alertas a la vez.
+
+2.3.3.1 Funcionamiento
+El sistema valida la autorización del usuario sobre la operación. Si es correcta, crea un proceso interno para añadir el comentario a todas las alertas y devuelve HTTP 202 (Accepted).
+Cada alerta se procesa individualmente. Si una alerta presenta algún error, el comentario no se añadirá a esa alerta específica, pero el proceso continuará con las demás alertas.
+Cuando el proceso esté completado, se podrá consultar qué alertas se procesaron exitosamente y cuáles presentaron errores.
+2.3.3.2 Datos de entrada
+
+AtributoTipoObligatorioDescripciónalertaIdsTextoSíLista con los identificadores de las alertas.codigoMensajeTextoSíCódigo de mensaje. Obligatorio para todos los comentarios. Ver códigos de mensajes.textoTextoCondicionalTexto del comentario. Obligatorio si se usa el código MC-00001 (máximo 500 caracteres)
+Ejemplo de entrada
+  “alertaIds”: códigos de las alertas
+  "codigoMensaje": "MC-00001",
+  "texto": "Verificación completada del lote",
+  
+
+2.3.3.3 Datos de salida
+2.3.3.3.1 Datos de salida – Éxito
+Nos devuelve un código 202 – Accepted. Que indica que la solicitud es correcta y se lanzará un proceso interno para añadir el comentario a cada alerta. 
+
+2.3.3.3.2 Datos de salida – Error
+- 400 Bad Request. Falta algún dato.
+- 401 Unauthorized. El usuario no está autenticado. Puede faltar el token o ser inválido.
+- 403 Forbidden. El usuario no tiene permisos suficientes para acceder a la operación.
+
+
+
+
+
+3 ANEXO
+3.1 Estados de una alerta
+Las alertas en el Sistema Nacional de Gestión de Alertas (NAMS) pueden presentar distintos estados que reflejan su progreso dentro del proceso de investigación.
+La respuesta de la API proporciona dos tipos de información sobre estados:
+1. El estado actual de la alerta
+2. El historial completo de transiciones, que incluye:
+   - Cambios en el estado general de la alerta
+   - Cambios en los estados específicos de investigación
+Nota importante: Si se intenta realizar una transición hacia un estado en el que la alerta ya se encuentra, el sistema devolverá un error HTTP 400, indicando que no se ha producido ninguna modificación en el estado.
+A continuación se detallan los distintos estados posibles de una alerta:
+3.1.1 NEW (Nuevo)
+Significa que la alerta se ha importado recientemente al entorno del NAMS y nadie ha cambiado el estado todavía. Una vez que se cambia el estado, no se puede restablecer a este estado.
+3.1.2 ACTIVE (Activo)
+Significa que ningún usuario está investigando activamente la alerta en ese momento.
+3.1.3 UNDER INVESTIGATION (En Investigación)
+Significa que la alerta se encuentra actualmente en investigación. Puede haber problemas técnicos o de procedimiento, una carga de datos, la persona que realiza la verificación o problemas similares que llevaron a la alerta.
+Existen diferentes estados cuando el estado de la alerta es “En investigación”.
+Si se intenta hacer una transición de una alerta a un estado de investigación en el que ya se encuentra, el resultado será un error HTTP 400 (no se modifica).
+3.1.3.1 BLANK (En Blanco)
+No está permitido realizar una transición al estado Blank. Este es el estado inicial que indica que la investigación aún no ha comenzado.
+3.1.3.2 INVESTIGATION_PENDING (Investigación Pendiente)
+Indica que la alerta está pendiente de ser investigada.
+3.1.3.3 ROOT_CAUSE_ON_MY_SIDE (Causa de Mi Lado)
+Significa que la parte responsable de la investigación ha determinado que la causa del problema está del lado del usuario.
+3.1.3.4 NO_ROOT_CAUSE_ON_MY_SIDE (Sin Causa de Mi Lado)
+Significa que la parte responsable de la investigación ha determinado que la causa del problema no está del lado del usuario.
+3.1.4 ESCALATED (Escalado)
+Significa que no se pudo identificar la causa raíz de esa alerta dentro del tiempo acordado, por lo que se requiere la intervención de la autoridad nacional competente (NCA).
+El término "Escalado" se refiere al proceso de elevar una alerta a un nivel superior de atención dentro del sistema NAMS cuando NO se puede identificar la causa raíz dentro del tiempo acordado. En este caso, se requiere la intervención de la NCA.
+Escalado automático de alertas:
+Tiempo de procesamiento de alertas: Este parámetro define el plazo entre la aparición de la alerta en el NMVS y su escalada automática en el NAMS. Se puede configurar en la sección "Ajustes generales del sistema" de la GUI.
+Escalada al final del día: Si se activa esta opción, la escalada se realizará a las 24:00 para todas las alertas cuyo tiempo de procesamiento se haya excedido el día anterior.
+Escalada cada hora: Si no se activa la opción anterior, la escalada se realiza cada hora.
+Escalado manual de alertas:
+Cambiar estado de la alerta: Los usuarios pueden cambiar manualmente el estado de una alerta a "Escalada".
+Motivo de la escalada: Al escalar una alerta, se debe proporcionar un código de razón que explique el motivo de la escalada.
+Consecuencias del escalado:
+Intervención de la NCA: La NCA será notificada de la alerta escalada y deberá tomar las medidas necesarias para investigar y resolver el problema.
+Posibles acciones de la NCA: La NCA puede contactar con las partes involucradas, solicitar información adicional o iniciar una investigación formal. No se indican las acciones que realiza la NCA después de que una alerta se escala.
+3.1.5 CLOSED (Cerrado)
+Significa que se ha llevado a cabo la investigación y se ha llegado a la conclusión de que existe una causa técnica o de procedimiento para la alerta. Por lo tanto, el paquete no es un paquete sospechoso de falsificación y la alerta puede cerrarse.
+
+3.2 Códigos de mensajes
+Existe una lista de códigos de mensajes que se deben poner en las operaciones de agregarComentarioAlerta o agregarComentarioEnBloque.
+Existe un código de mensaje “MC-00001” que es “Otros” en el que es obligatorio poner el campo de texto si se selecciona este código de mensaje.
+Nota: Los textos de los demás mensajes en el entorno de pruebas están por definir.
+Código mensajeMensajeMC-00001“Otros”. Al indicar este código de mensaje es obligatorio añadir el campo de texto. MC-00002edited Msg. Please be aware of possible reporting obligations at national levelMC-00003textMsg. Please be aware of possible reporting obligations at national levelMC-00004textMsg. Please be aware of possible reporting obligations at national levelMC-00005textMsg'\\$.messageText. Please be aware of possible reporting obligations at national levelMC-00006textMsg'\r\n $.messageText. Please be aware of possible reporting obligations at national levelMC-00007textMsg. Please be aware of possible reporting obligations at national levelMC-00008textMsg. Please be aware of possible reporting obligations at national level
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+3.3 Códigos de motivos (reason codes)
+Cuando se realiza una de las operaciones de cambio de estado de una o varias alertas se tiene que indicar un “reasonCode” o motivo. Es obligatorio indicar un motivo del cambio. 
+En este campo de motivo se tiene que poner uno de los siguientes códigos.
+Código motivo (reason code)MensajeRC-001No tiene mensaje. Cuando se indica este código es obligatorio incluir un texto explicativo.RN-001No technical reason for alert identified by any partyRN-008Local system error cannot be fixed (NMVS issue)RN-011Issue fixed by end-userRN-012Issue cannot be fixed by end-user
+
+
+
+DIRECCIÓN GENERAL DE SALUD DIGITAL Y SISTEMAS DE INFORMACIÓN PARA EL SNS
+SUBDIRECCIÓN GENERAL DE SERVICIOS DIGITALES DE SALUD
+
+
+Carácter internoPágina 3 de 23
+
