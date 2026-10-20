@@ -1,0 +1,754 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions name="SnsfarmaNams"
+             targetNamespace="http://es.msc.snsfarmanams"
+             xmlns:tns="http://es.msc.snsfarmanams"
+             xmlns:xs="http://www.w3.org/2001/XMLSchema"
+             xmlns="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:wsdl="http://schemas.xmlsoap.org/wsdl/"
+             xmlns:soap="http://schemas.xmlsoap.org/wsdl/soap/"
+             xmlns:wsaw="http://www.w3.org/2006/05/addressing/wsdl">
+  <types>
+    <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+               xmlns:tns="http://es.msc.snsfarmanams"
+               targetNamespace="http://es.msc.snsfarmanams"
+               elementFormDefault="qualified">
+
+      <!-- Datos de la transacción, comunes a la entrada de todas las operaciones -->
+      <xs:complexType name="datosTransaccionType">
+        <xs:sequence>
+          <xs:element name="agente" type="xs:string"/>
+          <xs:element name="fechaOperacion" type="xs:dateTime"/>
+          <xs:element name="idTransaccion" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Respuesta de error, común a la salida de todas las operaciones -->
+      <xs:complexType name="errorResponseType">
+        <xs:sequence>
+          <xs:element name="idTransaccion" type="xs:string"/>
+          <xs:element name="identificadorError" type="xs:string"/>
+          <xs:element name="descripcionError" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Elemento global usado en el <detail> del SOAP Fault cuando una operación falla por un motivo de negocio -->
+      <xs:element name="errorResponse" type="tns:errorResponseType"/>
+
+      <!-- Filtro genérico (filtro, valor, operador) usado por varias operaciones -->
+      <xs:complexType name="filtroType">
+        <xs:sequence>
+          <xs:element name="filtro" type="xs:string"/>
+          <xs:element name="valor" type="xs:string"/>
+          <xs:element name="operador" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Adjunto de entrada: fichero codificado en base64, usado en Agregar Comentario Alerta -->
+      <xs:complexType name="adjuntoType">
+        <xs:sequence>
+          <xs:element name="nombreFichero" type="xs:string"/>
+          <xs:element name="base64" type="xs:base64Binary"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Adjunto de salida: identificador asignado al fichero ya subido -->
+      <xs:complexType name="adjuntoRespuestaType">
+        <xs:sequence>
+          <xs:element name="idFichero" type="xs:string"/>
+          <xs:element name="nombreFichero" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Texto libre de un comentario: máximo 500 caracteres, según la especificación funcional -->
+      <xs:simpleType name="textoComentarioType">
+        <xs:restriction base="xs:string">
+          <xs:maxLength value="500"/>
+        </xs:restriction>
+      </xs:simpleType>
+
+      <!-- Agregar Comentario Alerta: añade un comentario (con adjuntos opcionales) a una alerta existente -->
+      <xs:element name="agregarComentarioAlertaRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertaId" type="xs:string"/>
+            <xs:element name="codigoMensaje" type="xs:string"/>
+            <xs:element name="texto" type="tns:textoComentarioType" minOccurs="0"/>
+            <!-- Sin maxOccurs: el máximo de 5 ficheros se valida en negocio (ERR_SNSNAMS_009), no en el esquema -->
+            <xs:element name="adjuntos" type="tns:adjuntoType" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="agregarComentarioAlertaResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="comentarioId" type="xs:string"/>
+            <xs:element name="usuario" type="xs:string"/>
+            <xs:element name="fecha" type="xs:dateTime"/>
+            <xs:element name="codigoMensaje" type="xs:string"/>
+            <xs:element name="texto" type="xs:string" minOccurs="0"/>
+            <xs:element name="adjuntos" type="tns:adjuntoRespuestaType" minOccurs="0" maxOccurs="5"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Adjuntar Ficheros Alerta: añade entre 1 y 5 ficheros a una alerta existente, generando automáticamente un comentario MC-00001 -->
+      <xs:element name="adjuntarFicherosAlertaRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertaId" type="xs:string"/>
+            <!-- Sin maxOccurs: el máximo de 5 ficheros se valida en negocio (ERR_SNSNAMS_009), no en el esquema -->
+            <xs:element name="adjuntos" type="tns:adjuntoType" minOccurs="1" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="adjuntarFicherosAlertaResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="comentarioId" type="xs:string"/>
+            <xs:element name="usuario" type="xs:string"/>
+            <xs:element name="fecha" type="xs:dateTime"/>
+            <xs:element name="codigoMensaje" type="xs:string"/>
+            <xs:element name="texto" type="xs:string"/>
+            <xs:element name="adjuntos" type="tns:adjuntoRespuestaType" minOccurs="1" maxOccurs="5"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Adjuntar Ficheros desde URL: devuelve una URL temporal (1 hora, un único uso) para adjuntar entre 1 y 5 ficheros a una alerta
+           sin autenticación, desde un navegador o un móvil. Comparte las mismas restricciones y el mismo resultado que Adjuntar Ficheros Alerta -->
+      <xs:element name="adjuntarFicherosUrlAlertaRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertaId" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="adjuntarFicherosUrlAlertaResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="url" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Descargar Adjunto: a partir del identificador de un adjunto devuelve la URL temporal (un único uso) para descargar su contenido binario -->
+      <xs:element name="descargarAdjuntoRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="identificadorFichero" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="descargarAdjuntoResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="url" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Alerta (resumen) devuelta en el listado de Listado de Alertas -->
+      <xs:complexType name="alertaResumenType">
+        <xs:sequence>
+          <xs:element name="alertaId" type="xs:string"/>
+          <xs:element name="estado" type="xs:string"/>
+          <xs:element name="fechaCreacion" type="xs:dateTime"/>
+          <xs:element name="fechaModificacion" type="xs:dateTime"/>
+          <xs:element name="transactionId" type="xs:string"/>
+          <xs:element name="agenteId" type="xs:string"/>
+          <xs:element name="centroId" type="xs:string"/>
+          <xs:element name="productoId" type="xs:string"/>
+          <xs:element name="tipoOperacionId" type="xs:string"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Listado de Alertas: devuelve, sin consultar a NAMS, las alertas de la CA almacenadas en SNSFARMA-NAMS entre fechaDesde y fechaHasta -->
+      <xs:element name="listadoAlertasRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="fechaDesde" type="xs:dateTime"/>
+            <xs:element name="fechaHasta" type="xs:dateTime"/>
+            <xs:element name="filtros" type="tns:filtroType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="ultimaAlerta" type="xs:string" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="listadoAlertasResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="alertas" type="tns:alertaResumenType" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="ultimaAlerta" type="xs:string" minOccurs="0"/>
+            <xs:element name="hayMasAlertas" type="xs:boolean"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Modificar Estado Alerta: cambia el estado de una alerta propia (en UNDER_INVESTIGATION) a CLOSED o ESCALATED -->
+      <xs:element name="modificarEstadoAlertaRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertaId" type="xs:string"/>
+            <xs:element name="nuevoEstado" type="xs:string"/>
+            <!-- Obligatorio salvo cuando no aplica; la obligatoriedad exacta según nuevoEstado se valida en negocio (ERR_SNSNAMS_022) -->
+            <xs:element name="codigoMotivo" type="xs:string" minOccurs="0"/>
+            <!-- Obligatorio únicamente si codigoMotivo es RC-001; prohibido en cualquier otro caso (ERR_SNSNAMS_022) -->
+            <xs:element name="textoMotivo" type="xs:string" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="modificarEstadoAlertaResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="respuesta" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Modificar Estado Bloque: variante en bloque de Modificar Estado Alerta. Misma semántica de estado/motivo que la operación individual,
+           pero sobre 1..N alertas. Es asíncrona: la respuesta solo confirma la aceptación de la petición; el procesamiento (individual, alerta a
+           alerta) ocurre en segundo plano y los errores de una alerta no afectan a las demás. -->
+      <xs:element name="modificarEstadoAlertaBloqueRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertaId" type="xs:string" maxOccurs="unbounded"/>
+            <xs:element name="nuevoEstado" type="xs:string"/>
+            <!-- Obligatorio salvo cuando no aplica; la obligatoriedad exacta según nuevoEstado se valida en negocio (ERR_SNSNAMS_022) -->
+            <xs:element name="codigoMotivo" type="xs:string" minOccurs="0"/>
+            <!-- Obligatorio únicamente si codigoMotivo es RC-001; prohibido en cualquier otro caso (ERR_SNSNAMS_022) -->
+            <xs:element name="textoMotivo" type="xs:string" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="modificarEstadoAlertaBloqueResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="respuesta" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Modificar Estado Investigación Alerta: cambia el estado de investigación de una alerta propia (en UNDER_INVESTIGATION) -->
+      <xs:element name="modificarEstadoInvestigacionAlertaRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertaId" type="xs:string"/>
+            <xs:element name="nuevoEstadoInvestigacion" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="modificarEstadoInvestigacionAlertaResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="respuesta" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Modificar Estado Investigación Bloque: variante en bloque de Modificar Estado Investigación Alerta (mismos datos de entrada pero con 1..N alertaId) -->
+      <xs:element name="modificarEstadoInvestigacionAlertaBloqueRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertaId" type="xs:string" maxOccurs="unbounded"/>
+            <xs:element name="nuevoEstadoInvestigacion" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="modificarEstadoInvestigacionAlertaBloqueResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="respuesta" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Información de la transacción de origen/destino que originó la alerta, tal cual la devuelve SEVeM -->
+      <xs:complexType name="transaccionInformacionType">
+        <xs:sequence>
+          <xs:element name="businessProcess" type="xs:string" minOccurs="0"/>
+          <xs:element name="errorCodeNs" type="xs:string" minOccurs="0"/>
+          <xs:element name="correlationIdRequestor" type="xs:string" minOccurs="0"/>
+          <xs:element name="correlationIdNs" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Datos del usuario final anonimizado que realizó la transacción que originó la alerta -->
+      <xs:complexType name="datosUsuarioFinalType">
+        <xs:sequence>
+          <xs:element name="createdBy" type="xs:string" minOccurs="0"/>
+          <xs:element name="createdAt" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="modifiedBy" type="xs:string" minOccurs="0"/>
+          <xs:element name="modifiedAt" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="endUserId" type="xs:string" minOccurs="0"/>
+          <xs:element name="obsolete" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="obsoleteSince" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="name" type="xs:string" minOccurs="0"/>
+          <xs:element name="street" type="xs:string" minOccurs="0"/>
+          <xs:element name="city" type="xs:string" minOccurs="0"/>
+          <xs:element name="zip" type="xs:string" minOccurs="0"/>
+          <xs:element name="country" type="xs:string" minOccurs="0"/>
+          <xs:element name="regionCode" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Datos del usuario que causó la alerta en la transacción de origen -->
+      <xs:complexType name="datosUsuarioIniciadorType">
+        <xs:sequence>
+          <xs:element name="clientId" type="xs:string" minOccurs="0"/>
+          <xs:element name="userId" type="xs:string" minOccurs="0"/>
+          <xs:element name="regionCode" type="xs:string" minOccurs="0"/>
+          <xs:element name="emailAddress" type="xs:string" minOccurs="0"/>
+          <xs:element name="companyName" type="xs:string" minOccurs="0"/>
+          <xs:element name="userIntegrationType" type="xs:string" minOccurs="0"/>
+          <xs:element name="orgaType" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- (Re-)asignación de una alerta a un incidente -->
+      <xs:complexType name="transicionIncidenteType">
+        <xs:sequence>
+          <xs:element name="createdBy" type="xs:string" minOccurs="0"/>
+          <xs:element name="createdAt" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="sourceIncidentId" type="xs:string" minOccurs="0"/>
+          <xs:element name="targetIncidentId" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Cambio de estado de una alerta -->
+      <xs:complexType name="transicionEstadoType">
+        <xs:sequence>
+          <xs:element name="createdBy" type="xs:string" minOccurs="0"/>
+          <xs:element name="createdAt" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="transitionId" type="xs:string" minOccurs="0"/>
+          <xs:element name="sourceStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="targetStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="reasonCode" type="xs:string" minOccurs="0"/>
+          <xs:element name="customReasonText" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Cambio de estado de investigación de una alerta -->
+      <xs:complexType name="transicionEstadoInvestigacionType">
+        <xs:sequence>
+          <xs:element name="createdBy" type="xs:string" minOccurs="0"/>
+          <xs:element name="createdAt" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="transitionId" type="xs:string" minOccurs="0"/>
+          <xs:element name="sourceStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="targetStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="actor" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Datos generales de una alerta devueltos por Detalle de una Alerta: réplica de todos los datos que devuelve SEVeM (AlertDto) -->
+      <xs:complexType name="alertaDetalleType">
+        <xs:sequence>
+          <xs:element name="alertId" type="xs:string"/>
+          <xs:element name="createdBy" type="xs:string" minOccurs="0"/>
+          <xs:element name="createdAt" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="modifiedBy" type="xs:string" minOccurs="0"/>
+          <xs:element name="modifiedAt" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="status" type="xs:string" minOccurs="0"/>
+          <xs:element name="locationId" type="xs:string" minOccurs="0"/>
+          <xs:element name="causerOrganisationType" type="xs:string" minOccurs="0"/>
+          <xs:element name="causerUserName" type="xs:string" minOccurs="0"/>
+          <xs:element name="causerSubUserId" type="xs:string" minOccurs="0"/>
+          <xs:element name="errorCodeHub" type="xs:string" minOccurs="0"/>
+          <xs:element name="errorMessageHub" type="xs:string" minOccurs="0"/>
+          <xs:element name="initiatingMarket" type="xs:string" minOccurs="0"/>
+          <xs:element name="fulfillingMarket" type="xs:string" minOccurs="0"/>
+          <xs:element name="initiatingTransactionInformation" type="tns:transaccionInformacionType" minOccurs="0"/>
+          <xs:element name="fulfillingTransactionInformation" type="tns:transaccionInformacionType" minOccurs="0"/>
+          <xs:element name="requestTargetState" type="xs:string" minOccurs="0"/>
+          <xs:element name="alertTimestamp" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="escalationTimestamp" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="givenProductCodeScheme" type="xs:string" minOccurs="0"/>
+          <xs:element name="givenProductCode" type="xs:string" minOccurs="0"/>
+          <xs:element name="givenBatchId" type="xs:string" minOccurs="0"/>
+          <xs:element name="givenBatchExpiryDate" type="xs:string" minOccurs="0"/>
+          <xs:element name="givenSerialNumber" type="xs:string" minOccurs="0"/>
+          <xs:element name="determinedProductCodeScheme" type="xs:string" minOccurs="0"/>
+          <xs:element name="determinedProductCode" type="xs:string" minOccurs="0"/>
+          <xs:element name="determinedBatchId" type="xs:string" minOccurs="0"/>
+          <xs:element name="determinedBatchExpiryDate" type="xs:string" minOccurs="0"/>
+          <xs:element name="determinedSerialNumber" type="xs:string" minOccurs="0"/>
+          <xs:element name="suspectedCauser" type="xs:string" minOccurs="0"/>
+          <xs:element name="intermarketTransactionType" type="xs:string" minOccurs="0"/>
+          <xs:element name="obpInvestigationStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="mahInvestigationStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="nmvoInvestigationStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="endUserInvestigationStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="emvsMahId" type="xs:string" minOccurs="0"/>
+          <xs:element name="mahName" type="xs:string" minOccurs="0"/>
+          <xs:element name="obpId" type="xs:string" minOccurs="0"/>
+          <xs:element name="obpStatus" type="xs:string" minOccurs="0"/>
+          <xs:element name="productName" type="xs:string" minOccurs="0"/>
+          <xs:element name="manualEntry" type="xs:boolean" minOccurs="0"/>
+          <xs:element name="actualState" type="xs:string" minOccurs="0"/>
+          <xs:element name="marketId" type="xs:string" minOccurs="0"/>
+          <xs:element name="givenNhrn" type="xs:string" minOccurs="0"/>
+          <xs:element name="determinedNhrn" type="xs:string" minOccurs="0"/>
+          <xs:element name="packLastUpdateLocation" type="xs:string" minOccurs="0"/>
+          <xs:element name="packLastUpdateTimestamp" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="packLastUpdateMarket" type="xs:string" minOccurs="0"/>
+          <xs:element name="operation" type="xs:string" minOccurs="0"/>
+          <xs:element name="dueDate" type="xs:dateTime" minOccurs="0"/>
+          <xs:element name="clientSoftwareSupplier" type="xs:string" minOccurs="0"/>
+          <xs:element name="clientSoftwareName" type="xs:string" minOccurs="0"/>
+          <xs:element name="clientSoftwareVersion" type="xs:string" minOccurs="0"/>
+          <xs:element name="endUserDetails" type="tns:datosUsuarioFinalType" minOccurs="0"/>
+          <xs:element name="initiatingUserInfo" type="tns:datosUsuarioIniciadorType" minOccurs="0"/>
+          <xs:element name="incidentTransitions" type="tns:transicionIncidenteType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="statusTransitions" type="tns:transicionEstadoType" minOccurs="0" maxOccurs="unbounded"/>
+          <xs:element name="investigationStatusTransitions" type="tns:transicionEstadoInvestigacionType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Adjunto de un comentario devuelto por Detalle de una Alerta: solo el identificador, no el contenido (se descarga aparte con URL Descarga Adjunto) -->
+      <xs:complexType name="adjuntoDetalleType">
+        <xs:sequence>
+          <xs:element name="attachmentId" type="xs:string" minOccurs="0"/>
+          <xs:element name="filename" type="xs:string" minOccurs="0"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Comentario de una alerta devuelto por Detalle de una Alerta, con los identificadores de sus ficheros adjuntos -->
+      <xs:complexType name="comentarioDetalleType">
+        <xs:sequence>
+          <xs:element name="commentId" type="xs:string"/>
+          <xs:element name="author" type="xs:string"/>
+          <xs:element name="timestamp" type="xs:dateTime"/>
+          <xs:element name="text" type="xs:string"/>
+          <xs:element name="attachments" type="tns:adjuntoDetalleType" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+      </xs:complexType>
+
+      <!-- Detalle de una Alerta: devuelve los datos generales, los comentarios y los identificadores de los ficheros adjuntos de una alerta -->
+      <xs:element name="detalleAlertaRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertId" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="detalleAlertaResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="alert" type="tns:alertaDetalleType"/>
+            <xs:element name="comments" type="tns:comentarioDetalleType" minOccurs="0" maxOccurs="unbounded"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <!-- Agregar Comentario Bloque: añade el mismo comentario a varias alertas. Las validaciones (agente, comentario) y la llamada a SEVeM son
+           síncronas: cualquier fallo se devuelve como error. SEVeM procesa el comentario después mediante un job.
+           El máximo de alertas (5000) se valida en negocio (ERR_SNSNAMS_080), no en el esquema -->
+      <xs:element name="agregarComentarioBloqueRequest">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="datosTransaccion" type="tns:datosTransaccionType"/>
+            <xs:element name="alertaIds" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+            <xs:element name="codigoMensaje" type="xs:string"/>
+            <xs:element name="texto" type="tns:textoComentarioType" minOccurs="0"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+      <xs:element name="agregarComentarioBloqueResponse">
+        <xs:complexType>
+          <xs:sequence>
+            <xs:element name="idTransaccion" type="xs:string"/>
+            <xs:element name="respuesta" type="xs:string"/>
+          </xs:sequence>
+        </xs:complexType>
+      </xs:element>
+
+    </xs:schema>
+  </types>
+
+  <message name="agregarComentarioAlertaRequest">
+    <part name="parametros" element="tns:agregarComentarioAlertaRequest"/>
+  </message>
+  <message name="agregarComentarioAlertaResponse">
+    <part name="parametros" element="tns:agregarComentarioAlertaResponse"/>
+  </message>
+
+  <message name="listadoAlertasRequest">
+    <part name="parametros" element="tns:listadoAlertasRequest"/>
+  </message>
+  <message name="listadoAlertasResponse">
+    <part name="parametros" element="tns:listadoAlertasResponse"/>
+  </message>
+
+  <message name="adjuntarFicherosAlertaRequest">
+    <part name="parametros" element="tns:adjuntarFicherosAlertaRequest"/>
+  </message>
+  <message name="adjuntarFicherosAlertaResponse">
+    <part name="parametros" element="tns:adjuntarFicherosAlertaResponse"/>
+  </message>
+
+  <message name="adjuntarFicherosUrlAlertaRequest">
+    <part name="parametros" element="tns:adjuntarFicherosUrlAlertaRequest"/>
+  </message>
+  <message name="adjuntarFicherosUrlAlertaResponse">
+    <part name="parametros" element="tns:adjuntarFicherosUrlAlertaResponse"/>
+  </message>
+
+  <message name="descargarAdjuntoRequest">
+    <part name="parametros" element="tns:descargarAdjuntoRequest"/>
+  </message>
+  <message name="descargarAdjuntoResponse">
+    <part name="parametros" element="tns:descargarAdjuntoResponse"/>
+  </message>
+
+  <message name="modificarEstadoAlertaRequest">
+    <part name="parametros" element="tns:modificarEstadoAlertaRequest"/>
+  </message>
+  <message name="modificarEstadoAlertaResponse">
+    <part name="parametros" element="tns:modificarEstadoAlertaResponse"/>
+  </message>
+
+  <message name="modificarEstadoAlertaBloqueRequest">
+    <part name="parametros" element="tns:modificarEstadoAlertaBloqueRequest"/>
+  </message>
+  <message name="modificarEstadoAlertaBloqueResponse">
+    <part name="parametros" element="tns:modificarEstadoAlertaBloqueResponse"/>
+  </message>
+
+  <message name="modificarEstadoInvestigacionAlertaRequest">
+    <part name="parametros" element="tns:modificarEstadoInvestigacionAlertaRequest"/>
+  </message>
+  <message name="modificarEstadoInvestigacionAlertaResponse">
+    <part name="parametros" element="tns:modificarEstadoInvestigacionAlertaResponse"/>
+  </message>
+
+  <message name="modificarEstadoInvestigacionAlertaBloqueRequest">
+    <part name="parametros" element="tns:modificarEstadoInvestigacionAlertaBloqueRequest"/>
+  </message>
+  <message name="modificarEstadoInvestigacionAlertaBloqueResponse">
+    <part name="parametros" element="tns:modificarEstadoInvestigacionAlertaBloqueResponse"/>
+  </message>
+
+  <message name="detalleAlertaRequest">
+    <part name="parametros" element="tns:detalleAlertaRequest"/>
+  </message>
+  <message name="detalleAlertaResponse">
+    <part name="parametros" element="tns:detalleAlertaResponse"/>
+  </message>
+
+  <message name="agregarComentarioBloqueRequest">
+    <part name="parametros" element="tns:agregarComentarioBloqueRequest"/>
+  </message>
+  <message name="agregarComentarioBloqueResponse">
+    <part name="parametros" element="tns:agregarComentarioBloqueResponse"/>
+  </message>
+
+  <portType name="SnsfarmaNamsPortType">
+    <operation name="agregarComentarioAlerta">
+      <input name="agregarComentarioAlertaIn" message="tns:agregarComentarioAlertaRequest"
+       wsaw:Action="http://es.msc.snsfarmanams/agregarComentarioAlerta"/>
+      <output name="agregarComentarioAlertaOut" message="tns:agregarComentarioAlertaResponse"
+       wsaw:Action="http://es.msc.snsfarmanams/agregarComentarioAlertaResponse"/>
+    </operation>
+    <operation name="listadoAlertas">
+      <input name="listadoAlertasIn" message="tns:listadoAlertasRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/listadoAlertas"/>
+      <output name="listadoAlertasOut" message="tns:listadoAlertasResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/listadoAlertasResponse"/>
+    </operation>
+    <operation name="adjuntarFicherosAlerta">
+      <input name="adjuntarFicherosAlertaIn" message="tns:adjuntarFicherosAlertaRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/adjuntarFicherosAlerta"/>
+      <output name="adjuntarFicherosAlertaOut" message="tns:adjuntarFicherosAlertaResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/adjuntarFicherosAlertaResponse"/>
+    </operation>
+    <operation name="adjuntarFicherosUrlAlerta">
+      <input name="adjuntarFicherosUrlAlertaIn" message="tns:adjuntarFicherosUrlAlertaRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/adjuntarFicherosUrlAlerta"/>
+      <output name="adjuntarFicherosUrlAlertaOut" message="tns:adjuntarFicherosUrlAlertaResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/adjuntarFicherosUrlAlertaResponse"/>
+    </operation>
+    <operation name="modificarEstadoAlerta">
+      <input name="modificarEstadoAlertaIn" message="tns:modificarEstadoAlertaRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/modificarEstadoAlerta"/>
+      <output name="modificarEstadoAlertaOut" message="tns:modificarEstadoAlertaResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/modificarEstadoAlertaResponse"/>
+    </operation>
+    <operation name="modificarEstadoAlertaBloque">
+      <input name="modificarEstadoAlertaBloqueIn" message="tns:modificarEstadoAlertaBloqueRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/modificarEstadoAlertaBloque"/>
+      <output name="modificarEstadoAlertaBloqueOut" message="tns:modificarEstadoAlertaBloqueResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/modificarEstadoAlertaBloqueResponse"/>
+    </operation>
+    <operation name="modificarEstadoInvestigacionAlerta">
+      <input name="modificarEstadoInvestigacionAlertaIn" message="tns:modificarEstadoInvestigacionAlertaRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/modificarEstadoInvestigacionAlerta"/>
+      <output name="modificarEstadoInvestigacionAlertaOut" message="tns:modificarEstadoInvestigacionAlertaResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/modificarEstadoInvestigacionAlertaResponse"/>
+    </operation>
+    <operation name="modificarEstadoInvestigacionAlertaBloque">
+      <input name="modificarEstadoInvestigacionAlertaBloqueIn" message="tns:modificarEstadoInvestigacionAlertaBloqueRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/modificarEstadoInvestigacionAlertaBloque"/>
+      <output name="modificarEstadoInvestigacionAlertaBloqueOut" message="tns:modificarEstadoInvestigacionAlertaBloqueResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/modificarEstadoInvestigacionAlertaBloqueResponse"/>
+    </operation>
+    <operation name="descargarAdjunto">
+      <input name="descargarAdjuntoIn" message="tns:descargarAdjuntoRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/descargarAdjunto"/>
+      <output name="descargarAdjuntoOut" message="tns:descargarAdjuntoResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/descargarAdjuntoResponse"/>
+    </operation>
+    <operation name="detalleAlerta">
+      <input name="detalleAlertaIn" message="tns:detalleAlertaRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/detalleAlerta"/>
+      <output name="detalleAlertaOut" message="tns:detalleAlertaResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/detalleAlertaResponse"/>
+    </operation>
+    <operation name="agregarComentarioBloque">
+      <input name="agregarComentarioBloqueIn" message="tns:agregarComentarioBloqueRequest"
+             wsaw:Action="http://es.msc.snsfarmanams/agregarComentarioBloque"/>
+      <output name="agregarComentarioBloqueOut" message="tns:agregarComentarioBloqueResponse"
+              wsaw:Action="http://es.msc.snsfarmanams/agregarComentarioBloqueResponse"/>
+    </operation>
+  </portType>
+
+  <binding name="SnsfarmaNamsBinding" type="tns:SnsfarmaNamsPortType">
+    <soap:binding style="document" transport="http://schemas.xmlsoap.org/soap/http"/>
+    <!-- WS-Addressing es opcional: los mensajes sin cabeceras wsa:* se siguen enrutando por @PayloadRoot (SOAPAction/payload) -->
+    <wsaw:UsingAddressing/>
+    <operation name="agregarComentarioAlerta">
+      <soap:operation soapAction="agregarComentarioAlerta"/>
+      <input name="agregarComentarioAlertaIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="agregarComentarioAlertaOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="listadoAlertas">
+      <soap:operation soapAction="listadoAlertas"/>
+      <input name="listadoAlertasIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="listadoAlertasOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="adjuntarFicherosAlerta">
+      <soap:operation soapAction="adjuntarFicherosAlerta"/>
+      <input name="adjuntarFicherosAlertaIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="adjuntarFicherosAlertaOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="adjuntarFicherosUrlAlerta">
+      <soap:operation soapAction="adjuntarFicherosUrlAlerta"/>
+      <input name="adjuntarFicherosUrlAlertaIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="adjuntarFicherosUrlAlertaOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="modificarEstadoAlerta">
+      <soap:operation soapAction="modificarEstadoAlerta"/>
+      <input name="modificarEstadoAlertaIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="modificarEstadoAlertaOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="modificarEstadoAlertaBloque">
+      <soap:operation soapAction="modificarEstadoAlertaBloque"/>
+      <input name="modificarEstadoAlertaBloqueIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="modificarEstadoAlertaBloqueOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="modificarEstadoInvestigacionAlerta">
+      <soap:operation soapAction="modificarEstadoInvestigacionAlerta"/>
+      <input name="modificarEstadoInvestigacionAlertaIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="modificarEstadoInvestigacionAlertaOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="modificarEstadoInvestigacionAlertaBloque">
+      <soap:operation soapAction="modificarEstadoInvestigacionAlertaBloque"/>
+      <input name="modificarEstadoInvestigacionAlertaBloqueIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="modificarEstadoInvestigacionAlertaBloqueOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="descargarAdjunto">
+      <soap:operation soapAction="descargarAdjunto"/>
+      <input name="descargarAdjuntoIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="descargarAdjuntoOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="detalleAlerta">
+      <soap:operation soapAction="detalleAlerta"/>
+      <input name="detalleAlertaIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="detalleAlertaOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+    <operation name="agregarComentarioBloque">
+      <soap:operation soapAction="agregarComentarioBloque"/>
+      <input name="agregarComentarioBloqueIn">
+        <soap:body use="literal"/>
+      </input>
+      <output name="agregarComentarioBloqueOut">
+        <soap:body use="literal"/>
+      </output>
+    </operation>
+  </binding>
+
+  <service name="SnsfarmaNams">
+    <port name="SnsfarmaNamsPort" binding="tns:SnsfarmaNamsBinding">
+      <soap:address location="http://localhost:8080/snsfnams/ws"/>
+    </port>
+  </service>
+
+</definitions>
